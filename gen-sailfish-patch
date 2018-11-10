@@ -83,6 +83,8 @@ The paths in the resulting diff will be set accordingly.
 
 Note: the script has to be run in the root directory of your project.
 
+Warning: the script has to be adapted for the publish feature to work in your setup!
+
 Usage:
     $script
     $script [-b] [-p]
