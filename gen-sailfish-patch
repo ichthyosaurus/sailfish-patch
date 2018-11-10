@@ -146,15 +146,15 @@ if [[ -z "$orig_branch" ]]; then
     exit 1
 fi
 
+if [[ ! -d "$out_dir" ]]; then
+    mkdir -p "$out_dir"
+fi
+
 if [[ -f "$prefix_file" ]]; then
     prefix_dir="$(cat "$prefix_file" | head -n 1)"
 else
     prefix_dir="/"
     echo "$prefix_dir" > "$prefix_file"
-fi
-
-if [[ ! -d "$out_dir" ]]; then
-    mkdir -p "$out_dir"
 fi
 
 if [[ ! -f "$out_dir/.gitignore" ]]; then
