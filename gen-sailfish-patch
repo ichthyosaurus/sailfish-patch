@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# PROJECT 0.0.1 (DATE)
-# Copyright (C) YEAR  Mirian Margiani
+# gen-sailfish-patch 0.0.1 (2018-11-10)
+# Copyright (C) 2018  Mirian Margiani
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@ dependencies() { # 1: echo/no-echo
 
 version() {
     echo "\
-PROJECT 0.0.1 (DATE)
-Copyright (C) YEAR  Mirian Margiani
+gen-sailfish-patch 0.0.1 (2018-11-10)
+Copyright (C) 2018  Mirian Margiani
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law."
@@ -64,7 +64,7 @@ fi
 show_help() {
 script="$(basename "$0")"
     echo "\
-** PROJECT **
+** gen-sailfish-patch **
 
 Lorem Ipsum dolor sit amet ...
 

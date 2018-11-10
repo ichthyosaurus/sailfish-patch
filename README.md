@@ -1,11 +1,11 @@
 
-# PROJECTCAPS 1 "" "PROJECT 0.0.1 (DATE)"
+# GEN-SAILFISH-PATCH 1 "" "gen-sailfish-patch 0.0.1 (2018-11-10)"
 
 ## NAME
-PROJECT - one-line description of what it does
+gen-sailfish-patch - one-line description of what it does
 
 ## SYNOPSIS
-`PROJECT` [OPTIONS] ...
+`gen-sailfish-patch` [OPTIONS] ...
 
 ## DESCRIPTION
 A textual description of the functioning of the command or function.
@@ -15,10 +15,10 @@ Include options here.
 
 ### General Information
 `-h, --help`
-  Show a short help text and exit. Use `man 1 PROJECT` to access this complete manual.
+  Show a short help text and exit. Use `man 1 gen-sailfish-patch` to access this complete manual.
 
 `-V, --version`
-  Show version and licensing information about `PROJECT`.
+  Show version and licensing information about `gen-sailfish-patch`.
 
 ## EXAMPLES
 Some examples of common usage.
@@ -27,22 +27,22 @@ Some examples of common usage.
 
 **0** No problems were encountered.
 
-**1** Any error occurred. `PROJECT` was not able to complete the task.
+**1** Any error occurred. `gen-sailfish-patch` was not able to complete the task.
 
 ## INSTALLATION
 Make sure all external scripts and/or libraries as listed under
-**DEPENDENCIES** are properly installed. Then simply put `PROJECT` in any
+**DEPENDENCIES** are properly installed. Then simply put `gen-sailfish-patch` in any
 directory listed in your `$PATH` and mark it as executable:
 
-    chmod +x PROJECT
+    chmod +x gen-sailfish-patch
 
 To install the manual page, you have to compile it from the Markdown source.
 For this, `md2man` can be used, or any other tool at your liking. Then copy
 the generated manual page to your local manual directory. Usually something
 like the below should do the job:
 9
-    md2man-roff README.md | gzip -c - > "PROJECT.1.gz"
-    sudo cp "PROJECT.1.gz" "/usr/local/man/man1/PROJECT.1.gz"
+    md2man-roff README.md | gzip -c - > "gen-sailfish-patch.1.gz"
+    sudo cp "gen-sailfish-patch.1.gz" "/usr/local/man/man1/gen-sailfish-patch.1.gz"
 
 ### Notes
 
@@ -54,7 +54,7 @@ Install it via
 or grab the source from <https://github.com/sunaku/md2man>.
 
 ## DEPENDENCIES
-`PROJECT` internally depends on the following external programs, scripts, and/or
+`gen-sailfish-patch` internally depends on the following external programs, scripts, and/or
 libraries. Make sure they are all installed and setup correctly.
 
 * (none)
@@ -67,20 +67,20 @@ libraries. Make sure they are all installed and setup correctly.
 Written by Mirian Margiani.
 
 ## COPYRIGHT
-Copyright (C) YEAR  Mirian Margiani
+Copyright (C) 2018  Mirian Margiani
 
-`PROJECT` is free software: you can redistribute it and/or modify it under
+`gen-sailfish-patch` is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
 version.
 
-`PROJECT` is distributed in the hope that it will be useful, but WITHOUT
+`gen-sailfish-patch` is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 You should have received a copy of the GNU General Public License along with
-`PROJECT`.  If not, see <http://www.gnu.org/licenses/>.
+`gen-sailfish-patch`.  If not, see <http://www.gnu.org/licenses/>.
 
 ## SEE ALSO
 A list of related commands or functions.
