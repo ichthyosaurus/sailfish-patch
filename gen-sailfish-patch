@@ -79,10 +79,15 @@ Arguments:
 "
 }
 
+build_rpm=false
+publish_rpm=false
+
 while [[ $# > 0 ]]; do
     case "$1" in
         --help|-h) show_help; exit 0;;
         --version|-V) version; exit 0;;
+        -b|--build) build_rpm=true;;
+        -p|--publish) publish_rpm=true;;
         -*) echo "unknown option: $1";;
         *) shift; continue;;
     esac
@@ -111,7 +116,9 @@ if [[ ! -d .git ]]; then
     exit 2
 fi
 
-project="$(basename "$(pwd)")"
+base="$(pwd)"
+project="$(basename "$base")"
+project_spec="$base/$rpm_dir/$project.spec"
 
 orig_branch="$(git branch --list | grep -E '^\s*original$')"
 
@@ -139,7 +146,7 @@ fi
 
 if [[ ! -d "$rpm_dir" ]]; then
     mkdir -p "$rpm_dir"
-    sed "s/Name: NAME/Name: $project/g;" "$spec_file" > "$rpm_dir/$project.spec"
+    sed "s/Name: NAME/Name: $project/g;" "$spec_file" > "$project_spec"
 fi
 
 if [[ ! -d "$patch_dir" ]]; then
@@ -148,3 +155,67 @@ if [[ ! -d "$patch_dir" ]]; then
 fi
 
 git diff original --src-prefix="a$prefix_dir" --dst-prefix="b$prefix_dir" -- . ':(exclude)build/*' > "$patch_dir/unified_diff.patch"
+
+echo "patch generated"
+
+
+if [[ "$build_rpm" == true ]]; then
+    echo "building RPM..."
+    cd "$out_dir"
+    old_release="$(grep -Pe "^Release: [0-9]*" "$project_spec" | cut -d":" -f2 | cut -d" " -f2)"
+
+    if [[ -z "$old_release" ]]; then
+        echo "error: invalid release!"
+        echo "build aborted"
+        exit 5
+    fi
+
+    new_release="$((old_release+1))"
+
+    if [[ -z "$new_release" ]]; then
+        echo "error: could not update release number!"
+        echo "build aborted"
+        exit 5
+    fi
+
+    sed -i "s/^Release: $old_release/Release: $new_release/g" "$project_spec"
+    echo "release: $new_release"
+    rpmbuild -bb --build-in-place "$base/$rpm_dir/$project.spec" --define "_rpmdir $(pwd)/RPMS"
+    cd "$base"
+    echo "RPM built"
+fi
+
+
+PASSFILE=~/Private/.sfos-passphrase
+if [[ "$publish_rpm" == true ]]; then
+    echo "deploying patch..."
+    cd "$out_dir"
+
+    if [[ ! -d RPMS/noarch ]]; then
+        echo "error: RPM directory not found!"
+        exit 1
+    fi
+
+    cd RPMS/noarch
+    rpm="$(find . -maxdepth 1 -iname "*.rpm" | sort | tail -1)"
+
+    if [[ -z "$rpm" ]]; then
+        echo "error: no RPM found!"
+        exit 1
+    fi
+
+    private-mount
+    if [[ ! -f "$PASSFILE" ]]; then
+        echo "warning: passphrase file not found!"
+        exit 1
+    fi
+
+    export SFOS_PASSPHRASE="$(cat "$PASSFILE")"
+    private-umount
+
+    scp "$rpm" nemo@handy:/home/nemo/Devel/Patches
+    echo "$SFOS_PASSPHRASE" | ssh handy "devel-su pkcon -y install-local '/home/nemo/Devel/Patches/$(basename "$rpm")'"
+
+    cd "$base"
+    echo "patch deployed"
+fi
