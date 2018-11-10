@@ -1,8 +1,8 @@
 {
-    "name": "TODO",
-    "description": "TODO",
-    "category": "TODO",
+    "name": "NAME",
+    "description": "DESCRIPTION",
+    "category": "CATERGORY",
     "infos": {
-        "maintainer": "TODO"
+        "maintainer": "MAINTAINER"
     }
 }

@@ -1,13 +1,13 @@
-Name: TODO
+Name: NAME
 BuildArch: noarch
-Summary: TODO
+Summary: SUMMARY
 Version: 0.0.1
 Release: 1
 Group: System/Patches
-License: TODO
+License: GPLv3
 Source0: %{name}-%{version}.tar.xz
 Requires: patchmanager
-Requires: TODO
+# Requires: TODO
 
 %description
 %{summary}
