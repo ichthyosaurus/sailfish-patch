@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# gen-sailfish-patch 0.0.1 (2018-11-10)
+# gen-sailfish-patch 1.0.0 (2018-11-11)
 # Copyright (C) 2016  Cornerman (https://github.com/cornerman/gen-sailfish-patch)
 #               2018  Mirian Margiani
 #
@@ -48,7 +48,7 @@ dependencies() { # 1: echo/no-echo
 
 version() {
     echo "\
-gen-sailfish-patch 0.0.1 (2018-11-10)
+gen-sailfish-patch 1.0.0 (2018-11-11)
 Copyright (C) 2018  Mirian Margiani
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it.
