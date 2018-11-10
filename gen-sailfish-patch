@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-DEPENDENCIES=(git sed private-mount private-umount scp ssh)
+DEPENDENCIES=(git sed private-mount private-umount scp ssh rpmbuild)
 
 dependencies() { # 1: echo/no-echo
     ret=0
