@@ -1,5 +1,5 @@
 
-# GEN-SAILFISH-PATCH 1 "" "gen-sailfish-patch 1.0.0 (2018-11-11)"
+# GEN-SAILFISH-PATCH 1 "" "gen-sailfish-patch 1.1.0 (2019-05-09)"
 
 ## NAME
 gen-sailfish-patch - Generate diff and scaffold for SailfishOS patches
