@@ -138,6 +138,8 @@ fi
 
 base="$(pwd)"
 project="$(basename "$base")"
+project="${project#sfos-}"
+project="sfos-patch-${project#patch-}"
 project_spec="$base/$rpm_dir/$project.spec"
 
 orig_branch="$(git branch --list | grep -E '^\s*original$')"
