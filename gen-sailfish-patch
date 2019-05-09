@@ -203,6 +203,12 @@ if [[ "$build_rpm" == true ]]; then
     sed -i "s/^Release: $old_release/Release: $new_release/g" "$project_spec"
     echo "release: $new_release"
     rpmbuild -bb --build-in-place "$base/$rpm_dir/$project.spec" --define "_rpmdir $(pwd)/RPMS"
+
+    if [[ $? -ne 0 ]]; then
+        echo "error: failed to build RPM"
+        exit 1
+    fi
+
     cd "$base"
     echo "RPM built"
 fi
