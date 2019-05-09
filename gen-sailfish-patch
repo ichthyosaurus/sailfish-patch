@@ -213,8 +213,6 @@ if [[ "$build_rpm" == true ]]; then
     echo "RPM built"
 fi
 
-
-PASSFILE=~/Private/.sfos-passphrase
 if [[ "$publish_rpm" == true ]]; then
     echo "deploying patch..."
     cd "$out_dir"
@@ -225,24 +223,31 @@ if [[ "$publish_rpm" == true ]]; then
     fi
 
     cd RPMS/noarch
-    rpm="$(find . -maxdepth 1 -iname "*.rpm" | sort | tail -1)"
+    rpm="$(find . -maxdepth 1 -iname "*.rpm" | sort --version-sort | tail -1)"
 
     if [[ -z "$rpm" ]]; then
         echo "error: no RPM found!"
         exit 1
     fi
 
-    private-mount
+    PASSFILE=~/Private/.sfos-passphrase
     if [[ ! -f "$PASSFILE" ]]; then
         echo "warning: passphrase file not found!"
         exit 1
     fi
 
-    export SFOS_PASSPHRASE="$(cat "$PASSFILE")"
-    private-umount
+    pkg="$(basename "$rpm")"
+    cap="$(echo "$pkg" | grep -Pe "-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+\.noarch\.rpm" -o)"
+    pkg="${pkg%$cap}"
+
+    if [[ -z "$pkg" ]]; then
+        echo "error: failed to get RPM name!"
+        exit 1
+    fi
 
     scp "$rpm" nemo@handy:/home/nemo/Devel/Patches
-    echo "$SFOS_PASSPHRASE" | ssh handy "devel-su pkcon -y install-local '/home/nemo/Devel/Patches/$(basename "$rpm")'"
+    head -1 "$PASSFILE" | ssh handy "devel-su pkcon -y install-local '/home/nemo/Devel/Patches/$(basename "$rpm")'"
+    head -1 "$PASSFILE" | ssh handy "devel-su /usr/sbin/patchmanager -a '$pkg'"
 
     cd "$base"
     echo "patch deployed"
