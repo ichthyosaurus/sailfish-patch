@@ -1,8 +1,8 @@
 {
-    "name": "NAME",
-    "description": "DESCRIPTION",
-    "category": "CATERGORY",
+    "name": "@DISPLAYNAME@",
+    "description": "@DESCRIPTION@",
+    "category": "@CATEGORY@",
     "infos": {
-        "maintainer": "MAINTAINER"
+        "maintainer": "@MAINTAINER@"
     }
 }

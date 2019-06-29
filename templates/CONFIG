@@ -1,0 +1,94 @@
+#
+# SailfishOS Patch Configuration File
+# for gen-sailfish-patch
+#
+# Note: the file will be read line-by-line and
+# only the following fields are recognized:
+# single line: Prefix, DisplayName, PackageName, Category,
+#   Maintainer, Summary, DiscussionLink, DonationsLink,
+#   SourcesLink, Version
+# multiline: Description, Screenshots, CompatibleVersions,
+#   Changelog, Requires
+#
+# All fields except the ones specified above can only
+# contain a single line. Each line in a multiline
+# field must start with '- '.
+#
+
+Prefix: /usr/share
+DisplayName: Pretty Name
+PackageName: sfos-patch-category-name
+Category: Others
+# Category must be one of:
+#     Homescreen
+#     Browser
+#     Camera
+#     Calendar
+#     Clock
+#     Contacts
+#     Email
+#     Gallery
+#     Media
+#     Messages
+#     Phone
+#     Silica
+#     Settings
+#     Keyboard
+#     Others
+
+Maintainer: username
+Summary: short summary for package managers
+Description:
+- long description for the store
+- possibly spanning over multiple lines
+
+DiscussionLink: https://example.org/discussion
+DonationsLink: https://example.org/donations
+SourcesLink: https://example.org/sources
+
+Version: X.Y.Z
+Release: N
+
+Requires:
+- sailfish-version >= 3.0.0
+- jolla-keyboard
+- jolla-xt9 >= 0.5.9
+
+Screenshots:
+- /home/user/screen-1.png
+- /home/user/screen-2.png
+- path/relative/to/build/dir/screen-3.png
+
+CompatibleVersions:
+- 1.1.9.30
+- 2.0.2.51
+- 2.0.4.14
+- 2.0.5.6
+- 2.1.0.11
+- 2.1.1.12
+- 2.1.1.23
+- 2.1.1.24
+- 2.1.1.26
+- 2.1.2.3
+- 2.1.3.3
+- 2.1.3.5
+- 2.1.3.7
+- 2.1.4.13
+- 2.1.4.14
+- 2.1.4.15
+- 2.2.0.29
+- 2.2.1.18
+- 2.2.1.19
+- 3.0.0.5
+- 3.0.0.8
+- 3.0.0.11
+- 3.0.1.11
+- 3.0.1.14
+- 3.0.2.8
+- 3.0.3.8
+- 3.0.3.9
+- 3.0.3.10
+
+Changelog:
+- your changelog
+- in as many lines as you wish

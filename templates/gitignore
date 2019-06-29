@@ -1,2 +1,5 @@
 documentation.list
 RPMS
+.directory
+build.*
+*~

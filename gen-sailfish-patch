@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# gen-sailfish-patch 1.1.0 (2019-05-09)
-# Copyright (C) 2016  Cornerman (https://github.com/cornerman/gen-sailfish-patch)
+# sailfish-patch 2.0.0 (2019-06-29)
+# Copyright (C) 2016  Cornerman (https://github.com/cornerman/sailfish-patch)
 #               2018-2019  Mirian Margiani
 #
 # This program is free software: you can redistribute it and/or modify
@@ -23,12 +23,20 @@
 # BEGIN CONFIGURATION
 # The following variables have to be adapted for the publish feature
 # to work in your setup.
-PASSFILE=~/Private/.sfos-passphrase  # path to a local file containing your devel-su passphrase
-REMOTE_PATH=/home/nemo/Devel/Patches  # path to a directory where patches' RPMs will be stored on your phone
-SSH_TARGET=handy  # how to connect to your phone via ssh; config name or IP...
+SF_PATCH_PASSFILE=~/Private/.sfos-passphrase  # path to a local file containing your devel-su passphrase
+SF_PATCH_REMOTE_PATH=/home/nemo/Devel/Patches  # path to a directory where patches' RPMs will be stored on your phone
+SF_PATCH_SSH_TARGET=handy  # how to connect to your phone via ssh; config name or IP...
 # END   CONFIGURATION
 
-DEPENDENCIES=(git sed scp ssh rpmbuild)
+trap "exit 2" TERM
+export TOP_PID=$$
+
+abort() {
+    pkill -P $TOP_PID
+    kill -s TERM $TOP_PID
+}
+
+DEPENDENCIES=(git sed scp ssh rpmbuild xclip)
 
 dependencies() { # 1: echo/no-echo
     ret=0
@@ -58,7 +66,7 @@ dependencies() { # 1: echo/no-echo
 
 version() {
     echo "\
-gen-sailfish-patch 1.1.0 (2019-05-09)
+sailfish-patch 2.0.0 (2019-06-29)
 Copyright (C) 2016  Cornerman
               2018-2019  Mirian Margiani
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
@@ -76,188 +84,696 @@ fi
 show_help() {
 script="$(basename "$0")"
     echo "\
-** gen-sailfish-patch **
+** sailfish-patch **
 
-Generate diff and scaffold for SailfishOS patches.
+Manage your SailfishOS patches.
 
-Generate diff for patches and add necessary patch files if they do not exist
-(you need to adapt them to your needs and fill out the 'TODOs').
+Create a new patch skeleton with '-c NAME' and put the original files
+in the new Git branch 'original'. Copy everything to the branch 'master' and
+make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 
-Run '$script' in a git repository, where all the patched
-QML files reside. It expects a branch 'original' with all original qml
-files without changes in the same directory structure.
-
-Define a prefix for the path if your directory structure does not start with '/'
-by putting the prefix in a file 'build/dir' in the root of your project.
-
-The paths in the resulting diff will be set accordingly.
-
-Note: the script has to be run in the root directory of your project.
-
-Warning: the script has to be adapted for the publish feature to work in your setup!
+Note: separate settings pages are not yet supported in RPMs.
+Warning: the script has to be adapted for the publish-via-ssh feature
+         to work in your setup!
 
 Usage:
-    $script
+    $script -c NAME
     $script [-b] [-p]
     $script [-h] [-V]
 
 Arguments:
-    -b, --build   - build RPM
-    -p, --publish - publish and install patch
-    -V, --version - show version and license information
-    -h, --help    - show this help and exit
+    -c, --create NAME           - create new patch skeleton in NAME
+    -C, --check-config FILE     - validate config file FILE
+    -b, --build                 - build RPM and tarball
+    -p, --publish-ssh           - publish and install patch on your device via ssh
+    -Po, --publish-openrepos    - wizard for publishing in OpenRepos
+    -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
+    -V, --version               - show version and license information
+    -h, --help                  - show this help and exit
 "
 }
 
-build_rpm=false
-publish_rpm=false
+check_config=false
+check_config_name=
+create_new=false
+create_new_name=
+build=false
+publish_via_ssh=false
+publish_to_openrepos=false
+publish_to_pm_catalogue=false
 
 while [[ $# > 0 ]]; do
     case "$1" in
         --help|-h) show_help; exit 0;;
         --version|-V) version; exit 0;;
-        -b|--build) build_rpm=true;;
-        -p|--publish) publish_rpm=true;;
+        -C|--check-config)
+            check_config=true
+            shift
+
+            if [[ -z "$1" ]]; then
+                echo "error: no config file name given" >/dev/stderr
+                exit 2
+            else
+                check_config_name="$1"
+            fi
+        ;;
+        -c|--create)
+            create_new=true
+            shift
+
+            if [[ -z "$1" ]]; then
+                echo "error: no name for the new patch directory given" >/dev/stderr
+                exit 1
+            else
+                create_new_name="$1"
+            fi
+        ;;
+        -b|--build) build=true;;
+        -p|--publish-ssh) publish_via_ssh=true;;
+        -Po|--publish-openrepos) publish_to_openrepos=true;;
+        -Pm|--publish-patchmanager) publish_to_pm_catalogue=true;;
         -*) echo "unknown option: $1";;
         *) shift; continue;;
     esac
     shift
 done
 
-template_dir="$(dirname "$(readlink -f "$0")")/templates"
+categories="Homescreen
+Browser
+Camera
+Calendar
+Clock
+Contacts
+Email
+Gallery
+Media
+Messages
+Phone
+Silica
+Settings
+Keyboard
+Others"
 
-if [[ ! -d "$template_dir" ]]; then
-    echo "error: template directory not found!"
-    exit 1
+versions="1.1.9.30
+2.0.2.51
+2.0.4.14
+2.0.5.6
+2.1.0.11
+2.1.1.12
+2.1.1.23
+2.1.1.24
+2.1.1.26
+2.1.2.3
+2.1.3.3
+2.1.3.5
+2.1.3.7
+2.1.4.13
+2.1.4.14
+2.1.4.15
+2.2.0.29
+2.2.1.18
+2.2.1.19
+3.0.0.5
+3.0.0.8
+3.0.0.11
+3.0.1.11
+3.0.1.14
+3.0.2.8
+3.0.3.8
+3.0.3.9
+3.0.3.10"
+
+trim() {
+    local var="$*"
+    var="${var#"${var%%[![:space:]]*}"}"
+    var="${var%"${var##*[![:space:]]}"}"
+    echo -n "$var"
+}
+
+if [[ "$check_config" == true ]]; then
+    if [[ ! -f "$check_config_name" ]]; then
+        echo "error: could not find configuration file!" >/dev/stderr
+        exit 2
+    fi
+
+    # check keys and references, files, screenshots
+    error=false
+    count=0
+    keys_found=()
+
+    is_multiline=
+    is_multiline_at=0
+    is_multiline_required=false
+    lines_for_multi=0
+
+    while IFS='' read -r line || [[ -n "$line" ]]; do
+        count="$((count+1))"
+        line="$(trim "$line")"
+        key="${line%%:*}"
+        value="$(trim "${line#$key:}")"
+
+        if [[ -z "$line" ]]; then
+            continue
+        elif [[ "$line" == "#"* || "$line" == ";"* ]]; then
+            continue
+        fi
+
+        if [[ -n "$is_multiline" ]] && [[ "$line" == "- "* ]]; then
+            lines_for_multi="$((lines_for_multi+1))"
+            value="$(trim "${value#- }")"
+
+            if [[ "$is_multiline" == "Screenshots" ]]; then
+                if [[ ! -f "$value" && ! -f "$(basename "$check_config_name")/$value" ]]; then
+                    echo "error: screenshot file '$value' not found (line $count)" >/dev/stderr
+                    error=true
+                fi
+            elif [[ "$is_multiline" == "CompatibleVersions" ]]; then
+                if ! echo "$versions" | grep -Pqoe "^$value"; then
+                    echo "error: invalid version '$value' (line $count)" >/dev/stderr
+                    error=true
+                fi
+            fi
+
+            continue
+        fi
+
+        if [[ "$line" != *":"* ]]; then
+            echo "warning: comment lines should start with '#' (line $count)"
+            continue
+        fi
+
+        if [[ -n "$is_multiline" ]]; then
+            if (( lines_for_multi == 0 )); then
+                echo "warning: empty multi-line field '$is_multiline' at line $is_multiline_at"
+
+                if [[ "$is_multiline_required" == true ]]; then
+                    echo "error: required field '$key' is empty" >/dev/stderr
+                    error=true
+                fi
+            fi
+
+            is_multiline=
+            is_multiline_at=0
+            lines_for_multi=0
+            is_multiline_required=false
+        fi
+
+        # single line
+        is_single=true
+        case "$key" in
+            Prefix|DiscussionLink|DonationsLink|SourcesLink)
+                # may be empty
+                if [[ -z "$value" ]]; then
+                    echo "note: no value given for '$key'"
+                fi
+            ;;
+            DisplayName|Maintainer|Summary|Release)
+                # must not be empty
+                if [[ -z "$value" ]]; then
+                    echo "error: required field '$key' is empty" >/dev/stderr
+                    error=true
+                fi
+            ;;
+            PackageName)
+                # must not be empty
+                if [[ -z "$value" ]]; then
+                    echo "error: required field '$key' is empty" >/dev/stderr
+                    error=true
+                fi
+                # needs special rules
+                if echo "$value" | grep -Pqoe "[^a-zA-Z0-9-_]"; then
+                    echo "error: package name contains invalid characters (line $count)" >/dev/stderr
+                    error=true
+                elif echo "$value" | grep -Pqoe "^[-_]"; then
+                    echo "error: package name must not start with '-' or '_' (line $count)" >/dev/stderr
+                    error=true
+                fi
+            ;;
+            Category)
+                # must not be empty
+                if [[ -z "$value" ]]; then
+                    echo "error: required field '$key' is empty" >/dev/stderr
+                    error=true
+                fi
+                # needs special rules
+                if ! echo "$categories" | grep -Pqoe "^$value"; then
+                    echo "error: invalid category '$value' on line $count" >/dev/stderr
+                    error=true
+                fi
+            ;;
+            Version)
+                # must not be empty
+                if [[ -z "$value" ]]; then
+                    echo "error: required field '$key' is empty" >/dev/stderr
+                    error=true
+                fi
+                # needs special rules
+                if ! echo "$value" | grep -Pqoe '^[0-9]+\.[0-9]+\.[0-9]+'; then
+                    echo "error: version number must consist of three numbers separated by dots (X.Y.Z)" >/dev/stderr
+                    error=true
+                fi
+            ;;
+            *) is_single=false;;
+        esac
+
+        # multi line
+        if [[ "$is_single" == false ]]; then
+            case "$key" in
+                Screenshots|Changelog|Requires)
+                    is_multiline="$key"
+                    is_multiline_at="$count"
+                ;;
+                Description|CompatibleVersions)
+                    is_multiline="$key"
+                    is_multiline_at="$count"
+                    is_multiline_required=true
+                ;;
+                *)  echo "error: invalid key '$key' on line $count" >/dev/stderr
+                    error=true
+                ;;
+            esac
+        fi
+
+        keys_found+=("$key")
+    done < "$check_config_name"
+
+    for r in DisplayName PackageName Category Maintainer Summary Version Release Description CompatibleVersions; do
+        if ! printf "%s\n" "${keys_found[@]}"  | grep -Pqoe "^$r"; then
+            echo "error: required field '$r' is missing" >/dev/stderr
+            error=true
+        fi
+    done
+
+    if [[ "$error" == true ]]; then
+        exit 1
+    else
+        exit 0
+    fi
 fi
 
+
+template_dir="$(dirname "$(readlink -f "$0")")/templates"
 json_file="$template_dir/patch.json"
 gitignore_file="$template_dir/gitignore"
 spec_file="$template_dir/patch.spec"
+license_file="$template_dir/COPYING"
+config_file="$template_dir/CONFIG"
+icon_file="$template_dir/icon-openrepos.png"
 
-out_dir="build"
-patch_dir="$out_dir/patch"
-rpm_dir="$out_dir/rpm"
-prefix_file="$out_dir/dir"
+get_single_config() { # 1: config file, 2: key, 3: default value
+    # we can safely assume the file exists and is valid
+    # which means we can also assume the key exists if it is required
+
+    line="$(grep "^$2:" "$1" | head -1)"
+
+    if [[ -z "$line" ]]; then
+        echo "$3"
+        return
+    fi
+
+    key="${line%%:*}"
+    value="$(trim "${line#$key:}")"
+
+    if [[ -z "$value" ]]; then
+        echo -n "$3"
+    else
+        echo -n "$value"
+    fi
+}
+
+get_multi_config() { # 1: config file, 2: key, 3: default value
+    # we can safely assume the file exists and is valid
+    # which means we can also assume the key exists if it is required
+
+    key_at="$(grep -nr "^$2:" "$1" | cut -d':' -f1)"
+    readarray -t lines <<<"$(tail --lines=+"$((key_at+1))" "$1")"
+    selected=()
+
+    for l in "${lines[@]}"; do
+        first="${l:0:1}"
+
+        case "$first" in
+            -) selected+=("$(trim "${l:1}")");;
+            "#"|";") echo -n;;  # ignore comments
+            *)  if [[ "$l" == *":"* ]]; then
+                    break # is next key; done
+                else
+                    echo -n # ignore as comment
+                fi
+            ;;
+        esac
+    done
+
+    if (( ${#selected[@]} == 0 )); then
+        echo -n "$3"
+    else
+        printf "%s\n" "${selected[@]}"
+    fi
+}
+
+require_templates() {
+    if [[ ! -d "$template_dir" ]]; then
+        echo "error: template directory not found!" >/dev/stderr
+        abort
+    fi
+
+    for i in "$json_file" "$gitignore_file" "$spec_file" "$license_file" "$config_file" "$icon_file"; do
+        if [[ ! -f "$i" ]]; then
+            echo "error: template '$i' not found" >/dev/stderr
+            abort
+        fi
+    done
+}
+
+config_checker="$0"
+require_config() { # 1: expected config file location
+    local config="$1"
+    if [[ ! -f "$config" ]]; then
+        echo "error: could not find config file" >/dev/stderr
+        abort
+    else
+        "$config_checker" --check-config "$config"
+
+        if (( $? != 0 )); then
+            echo "error: config file contains errors" >/dev/stderr
+            echo "       please check the output above and try again" >/dev/stderr
+            abort
+        fi
+    fi
+}
+
+# return unchecked base config path to be used
+# in validator functions
+__get_config_path() {
+    echo -n "$(pwd)/build/CONFIG"
+}
+
+require_build_config() {
+    # require build dir
+    local build_dir="$(dirname "$(__get_config_path)")"
+    if [[ ! -d "$build_dir" ]]; then
+        echo "error: could not find build directory" >/dev/stderr
+        abort
+    fi
+
+    # require valid config
+    local config="$(__get_config_path)"
+    require_config "$config"
+
+    # return valid config path
+    # MUST be directly below 'build'
+    echo -n "$config"
+}
+
+require_current_package() { # 1: type (rpm/tarball)
+    if [[ "$1" != "rpm" && "$1" != "tarball" ]]; then
+        echo "internal error: invalid package type requested" >/dev/stderr
+        abort
+    fi
+
+    local extension=""
+    if [[ "$1" == rpm ]]; then
+        extension="rpm"
+    else
+        extension="tar.gz"
+    fi
+
+    local config="$(require_build_config)"
+    local build_dir="$(dirname "$config")"
+
+    # find package file
+    package_name="$(get_single_config "$(__get_config_path)" "PackageName")"
+    package="$(find "$build_dir" -maxdepth 1 -iname "$package_name-*.$extension" | sort --version-sort | tail -1)"
+
+    if [[ -z "$package" ]]; then
+        echo "error: no $1 found" >/dev/stderr
+        abort
+    fi
+
+    # return valid package path
+    echo -n "$package"
+}
 
 
-if [[ ! -d .git ]]; then
-    echo "error: not in the root directory of a Git repository!"
-    exit 2
-fi
+if [[ "$create_new" == true ]]; then
+    require_templates
 
-base="$(pwd)"
-project="$(basename "$base")"
-project="${project#sfos-}"
-project="sfos-patch-${project#patch-}"
-project_spec="$base/$rpm_dir/$project.spec"
+    if [[ -e "$create_new_name" ]]; then
+        echo "error: the file or directory with the name '$create_new_name' already exists" >/dev/stderr
+        exit 1
+    fi
 
-orig_branch="$(git branch --list | grep -E '^\s*original$')"
+    mkdir -p "$create_new_name"
+    cd "$create_new_name"
 
-if [[ -z "$orig_branch" ]]; then
-    echo "error: missing 'original' branch!"
-    echo "Create this branch and commit the original QML files without changes."
-    echo "The diff is created based on this branch."
-    exit 1
-fi
+    git init
+    git checkout -b original
 
-if [[ ! -d "$out_dir" ]]; then
-    mkdir -p "$out_dir"
-fi
+    cat <<EOF > "README"
+SailfishOS Patch
+================
 
-if [[ -f "$prefix_file" ]]; then
-    prefix_dir="$(cat "$prefix_file" | head -n 1)"
+Place your original files in the branch 'original' and commit them.
+
+Make sure there are ONLY the original files that you want to base the diff
+on are in this branch!
+
+Then, change to the branch 'master' and make your changes. The diff will
+include all differences between the two branches 'original' and 'master'
+EXCEPT for the two directories 'build' and 'extra'.
+
+Below 'build' you will find a sample configuration file named CONFIG which
+you have to adapt to configure your patch. (It is documented in-place.)
+
+If you want to add your own settings pages or include translation files,
+icons etc. in your patch, you can place them in the 'extra' directory. Note
+that this is not yet supported for RPMs.
+
+EOF
+
+    git add README
+    git commit -m "patch skeleton automatically created by sailfish-patch"
+
+    git checkout -b master
+
+    mkdir -p extra
+    mkdir -p build
+    cd build
+
+    cp "$config_file" CONFIG
+    cp "$license_file" COPYING
+    cp "$gitignore_file" .gitignore
+
+    git add CONFIG COPYING .gitignore
+    git commit -m "build templates automatically imported by sailfish-patch"
+
+    echo "patch created: $create_new_name"
+    exit 0
 else
-    prefix_dir="/"
-    echo "$prefix_dir" > "$prefix_file"
-fi
+    if [[ "$build" == true ]]; then
+        # require git root
+        if [[ ! -d .git ]]; then
+            echo "error: not in the root directory of a Git repository" >/dev/stderr
+            exit 2
+        fi
 
-if [[ ! -f "$out_dir/.gitignore" ]]; then
-    cp "$gitignore_file" "$out_dir/.gitignore"
-fi
+        orig_branch="$(git branch --list | grep -E '^\s*original$')"
 
-if [[ ! -d "$rpm_dir" ]]; then
-    mkdir -p "$rpm_dir"
-    sed "s/Name: NAME/Name: $project/g;" "$spec_file" > "$project_spec"
-fi
+        if [[ -z "$orig_branch" ]]; then
+            echo "error: missing 'original' branch!" >/dev/stderr
+            echo "       Create this branch and commit the original QML files without any changes." >/dev/stderr
+            echo "       The diff is created based on this branch." >/dev/stderr
+            exit 2
+        fi
 
-if [[ ! -d "$patch_dir" ]]; then
-    mkdir -p "$patch_dir"
-    cp "$json_file" "$patch_dir/patch.json"
-fi
+        # require valid config and build directory
+        base="$(pwd)"
+        config="$(require_build_config)"
+        build_dir="$(dirname "$config")"
 
-git diff original --src-prefix="a$prefix_dir" --dst-prefix="b$prefix_dir" -- . ':(exclude)build/*' > "$patch_dir/unified_diff.patch"
+        # require templates
+        require_templates
 
-echo "patch generated"
+        # create temp dir
+        temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
 
+        # create diff
+        prefix_dir="$(get_single_config "$config" "Prefix" "/")"
 
-if [[ "$build_rpm" == true ]]; then
-    echo "building RPM..."
-    cd "$out_dir"
-    old_release="$(grep -Pe "^Release: [0-9]*" "$project_spec" | cut -d":" -f2 | cut -d" " -f2)"
+        if [[ "$prefix_dir" != "/" && "$prefix_dir" != *"/" ]]; then
+            prefix_dir="$prefix_dir/"
+        fi
 
-    if [[ -z "$old_release" ]]; then
-        echo "error: invalid release!"
-        echo "build aborted"
-        exit 5
+        git diff original --src-prefix="a$prefix_dir" --dst-prefix="b$prefix_dir" -- . ':(exclude)build/*' > "$temp_build_dir/unified_diff.patch"
+        cd "$temp_build_dir"
+
+        # copy extra files
+        extra_dir="$base/extra"
+        if [[ -d "$extra_dir" ]]; then
+            mkdir extra
+            find "$extra_dir" -type f -iregex ".*\.\(qml|js|png|svg|qm\)" -exec cp {} "$temp_build_dir/extra" \;
+        fi
+
+        # copy and configure templates
+        rpm_build_dir="$temp_build_dir/rpm_build"
+        cp "$spec_file" rpm.spec
+        mkdir -p "$rpm_build_dir"
+        [[ -d extra ]] && cp extra/* "$rpm_build_dir"
+        cp unified_diff.patch "$rpm_build_dir/unified_diff.patch"
+        cp "$json_file" "$rpm_build_dir/patch.json"
+
+        tarball_build_dir="$temp_build_dir/tarball_build"
+        mkdir -p "$tarball_build_dir"
+        mv unified_diff.patch "$tarball_build_dir/unified_diff.patch"
+        [[ -d extra ]] && mv extra/* "$tarball_build_dir"
+
+        rpm_version="$(get_single_config "$config" "Version")"
+        release="$(get_single_config "$config" "Release")"
+        package="$(get_single_config "$config" "PackageName")"
+        echo "building version: $rpm_version-$release"
+
+        # configure spec and json files
+        for i in PackageName Summary Version Release Maintainer DisplayName Category; do
+            value="$(get_single_config "$config" "$i")"
+            [[ -z "$value" ]] && continue
+
+            value="${value//\//\\/}" # escape slashes
+            sed -i "s/@${i^^}@/$value/g" rpm.spec
+            sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/patch.json"
+        done
+
+        description="$(get_multi_config "$config" "Description")"
+        sed -i "s/@DESCRIPTION@/$description/g" "$rpm_build_dir/patch.json"
+
+        requires="$(get_multi_config "$config" "Requires")"
+        if [[ -n "$requires" ]]; then
+            readarray -t req_lines <<<"$(echo "$requires")"
+            for r in "${req_lines[@]}"; do
+                sed -i "/@REQUIRES@/i\
+Requires: $r" rpm.spec
+            done
+        fi
+        sed -i "s/@REQUIRES@//g" rpm.spec
+
+        # build rpm
+        echo "building RPM..."
+        rpmbuild -bb --build-in-place rpm.spec --define "_rpmdir $(pwd)/RPMS"
+
+        if (( $? != 0 )); then
+            echo "error: failed to build RPM" >/dev/stderr
+        else
+            mv --backup=t RPMS/**/*.rpm "$build_dir"
+            echo "success: RPM built"
+        fi
+
+        # build tarball
+        echo "building tarball..."
+        cd "$tarball_build_dir"
+        tarball="$package-$rpm_version-$release.tar.gz"
+        tar -czvf "$tarball" *
+
+        if (( $? != 0 )); then
+            echo "error: failed to build tarball" >/dev/stderr
+        else
+            echo "success: tarball built"
+            mv --backup=t "$tarball" "$build_dir"
+        fi
     fi
 
-    new_release="$((old_release+1))"
+    if [[ "$publish_via_ssh" == true ]]; then
+        echo "deploying patch..."
+        rpm="$(require_current_package rpm)"
 
-    if [[ -z "$new_release" ]]; then
-        echo "error: could not update release number!"
-        echo "build aborted"
-        exit 5
+        if [[ ! -f "$SF_PATCH_PASSFILE" ]]; then
+            echo "error: passphrase file not found!" >/dev/stderr
+            exit 2
+        fi
+
+        scp "$rpm" nemo@"$SF_PATCH_SSH_TARGET":"$SF_PATCH_REMOTE_PATH"
+        head -1 "$SF_PATCH_PASSFILE" | ssh "$SF_PATCH_SSH_TARGET" "devel-su pkcon -y install-local '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"
+        head -1 "$SF_PATCH_PASSFILE" | ssh "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"
+
+        echo "patch deployed"
     fi
 
-    sed -i "s/^Release: $old_release/Release: $new_release/g" "$project_spec"
-    echo "release: $new_release"
-    rpmbuild -bb --build-in-place "$base/$rpm_dir/$project.spec" --define "_rpmdir $(pwd)/RPMS"
+    __wizard_load() { # 1: type, 2: title, 3: key
+        config="$(__get_config_path)" # we assume it has been checked before
 
-    if [[ $? -ne 0 ]]; then
-        echo "error: failed to build RPM"
-        exit 1
+        if [[ "${1:0:1}" == "s" ]]; then
+            value="$(get_single_config "$config" "$3")"
+        else
+            value="$(get_multi_config "$config" "$3")"
+        fi
+
+        echo -n "$value" | xclip -selection c
+
+        if [[ "${1:0:1}" == "s" ]]; then
+            read -n 1 -s -p "$2: $value"; echo
+        else
+            read -n 1 -s -p "$2:
+$value"
+            echo
+        fi
+
+    }
+
+    if [[ "$publish_to_openrepos" == true ]]; then
+        echo "running wizard for publishing to OpenRepos..."
+        echo "Each value will be copied to the clipboard. Press any key to load the"
+        echo "next value."
+        echo
+        rpm="$(require_current_package rpm)"
+        config="$(__get_config_path)" # safe because we already checked above
+
+        name="$(get_single_config "$config" "DisplayName")"
+        echo -n "Patch: $name" | xclip -selection c
+        read -n 1 -s -p "Application name: Patch: $name"; echo
+
+        echo -n "Applications -> Patches" | xclip -selection c
+        read -n 1 -s -p "Category: Applications -> Patches"; echo
+        echo -n "" | xclip -selection c
+        read -n 1 -s -p "Keywords: (not yet supported)"; echo
+        echo -n "$icon_file" | xclip -selection c
+        read -n 1 -s -p "Icon: $icon_file"; echo
+        __wizard_load s "Summary" "Summary"
+        __wizard_load m "Description" "Description"
+
+        screenshots_path="$(dirname "$(get_multi_config "$config" "Screenshots" | head -1)")"
+        echo -n "$screenshots_path" | xclip -selection c
+        read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
+
+        echo -n "$rpm" | xclip -selection c
+        read -n 1 -s -p "Application version: $rpm"; echo
+
+        __wizard_load m "Changelog" "Changelog"
     fi
 
-    cd "$base"
-    echo "RPM built"
-fi
+    if [[ "$publish_to_pm_catalogue" == true ]]; then
+        echo "running wizard for publishing to Patchmanager's online catalogue..."
+        echo "Each value will be copied to the clipboard. Press any key to load the"
+        echo "next value."
+        echo
+        tarball="$(require_current_package tarball)"
 
-if [[ "$publish_rpm" == true ]]; then
-    echo "deploying patch..."
-    cd "$out_dir"
+        __wizard_load s "Internal name" "PackageName"
+        __wizard_load s "Display name" "DisplayName"
+        __wizard_load m "Description" "Description"
+        __wizard_load s "Category" "Category"
+        __wizard_load s "Discussion link" "DiscussionLink"
+        __wizard_load s "Donations link" "DonationsLink"
+        __wizard_load s "Sources link" "SourcesLink"
 
-    if [[ ! -d RPMS/noarch ]]; then
-        echo "error: RPM directory not found!"
-        exit 1
+        config="$(__get_config_path)" # safe because we already checked above
+        screenshots_path="$(dirname "$(get_multi_config "$config" "Screenshots" | head -1)")"
+        echo -n "$screenshots_path" | xclip -selection c
+        read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
+
+        __wizard_load m "Compatible versions" "CompatibleVersions"
+        echo -n "$tarball" | xclip -selection c
+        read -n 1 -s -p "Patch archive: $tarball"; echo
+
+        __wizard_load m "Changelog" "Changelog"
+
+        echo done
     fi
-
-    cd RPMS/noarch
-    rpm="$(find . -maxdepth 1 -iname "*.rpm" | sort --version-sort | tail -1)"
-
-    if [[ -z "$rpm" ]]; then
-        echo "error: no RPM found!"
-        exit 1
-    fi
-
-    if [[ ! -f "$PASSFILE" ]]; then
-        echo "error: passphrase file not found!"
-        exit 1
-    fi
-
-    pkg="$(basename "$rpm")"
-    cap="$(echo "$pkg" | grep -Pe "-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+\.noarch\.rpm" -o)"
-    pkg="${pkg%$cap}"
-
-    if [[ -z "$pkg" ]]; then
-        echo "error: failed to get RPM name!"
-        exit 1
-    fi
-
-    scp "$rpm" nemo@"$SSH_TARGET":"$REMOTE_PATH"
-    head -1 "$PASSFILE" | ssh "$SSH_TARGET" "devel-su pkcon -y install-local '$REMOTE_PATH/$(basename "$rpm")'"
-    head -1 "$PASSFILE" | ssh "$SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$pkg'"
-
-    cd "$base"
-    echo "patch deployed"
 fi

@@ -1,13 +1,14 @@
-Name: NAME
+Name: @PACKAGENAME@
 BuildArch: noarch
-Summary: SUMMARY
-Version: 0.0.1
-Release: 1
+Summary: @SUMMARY@
+Version: @VERSION@
+Release: @RELEASE@
 Group: System/Patches
 License: GPLv3
+Packager: @MAINTAINER@
 Source0: %{name}-%{version}.tar.xz
 Requires: patchmanager
-# Requires: TODO
+@REQUIRES@
 
 %description
 %{summary}
@@ -21,7 +22,7 @@ Requires: patchmanager
 rm -rf %{buildroot}
 
 mkdir -p %{buildroot}/usr/share/patchmanager/patches/%{name}
-cp -r patch/* %{buildroot}/usr/share/patchmanager/patches/%{name}
+cp -r rpm_build/* %{buildroot}/usr/share/patchmanager/patches/%{name}
 
 %pre
 if [ -d /var/lib/patchmanager/ausmt/patches/%{name} ]; then
