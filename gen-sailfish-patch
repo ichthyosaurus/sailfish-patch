@@ -20,6 +20,14 @@
 # kate: syntax bash
 #
 
+# BEGIN CONFIGURATION
+# The following variables have to be adapted for the publish feature
+# to work in your setup.
+PASSFILE=~/Private/.sfos-passphrase  # path to a local file containing your devel-su passphrase
+REMOTE_PATH=/home/nemo/Devel/Patches  # path to a directory where patches' RPMs will be stored on your phone
+SSH_TARGET=handy  # how to connect to your phone via ssh; config name or IP...
+# END   CONFIGURATION
+
 DEPENDENCIES=(git sed scp ssh rpmbuild)
 
 dependencies() { # 1: echo/no-echo
@@ -232,9 +240,8 @@ if [[ "$publish_rpm" == true ]]; then
         exit 1
     fi
 
-    PASSFILE=~/Private/.sfos-passphrase
     if [[ ! -f "$PASSFILE" ]]; then
-        echo "warning: passphrase file not found!"
+        echo "error: passphrase file not found!"
         exit 1
     fi
 
@@ -247,9 +254,9 @@ if [[ "$publish_rpm" == true ]]; then
         exit 1
     fi
 
-    scp "$rpm" nemo@handy:/home/nemo/Devel/Patches
-    head -1 "$PASSFILE" | ssh handy "devel-su pkcon -y install-local '/home/nemo/Devel/Patches/$(basename "$rpm")'"
-    head -1 "$PASSFILE" | ssh handy "devel-su /usr/sbin/patchmanager -a '$pkg'"
+    scp "$rpm" nemo@"$SSH_TARGET":"$REMOTE_PATH"
+    head -1 "$PASSFILE" | ssh "$SSH_TARGET" "devel-su pkcon -y install-local '$REMOTE_PATH/$(basename "$rpm")'"
+    head -1 "$PASSFILE" | ssh "$SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$pkg'"
 
     cd "$base"
     echo "patch deployed"
