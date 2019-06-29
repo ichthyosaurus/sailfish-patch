@@ -20,7 +20,7 @@
 # kate: syntax bash
 #
 
-DEPENDENCIES=(git sed private-mount private-umount scp ssh rpmbuild)
+DEPENDENCIES=(git sed scp ssh rpmbuild)
 
 dependencies() { # 1: echo/no-echo
     ret=0
