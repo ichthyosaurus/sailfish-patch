@@ -2,17 +2,13 @@
 # SailfishOS Patch Configuration File
 # for sailfish-patch
 #
-# Note: the file will be read line-by-line and
-# only the following fields are recognized:
-# single line: Prefix, DisplayName, PackageName, Category,
-#   Maintainer, Summary, DiscussionLink, DonationsLink,
-#   SourcesLink, Version
-# multiline: Description, Screenshots, CompatibleVersions,
-#   Changelog, Requires
-#
-# All fields except the ones specified above can only
-# contain a single line. Each line in a multiline
-# field must start with '- '.
+# Fields:
+# - one line: Prefix, DisplayName, PackageName, Category,
+#             Maintainer, Summary, DiscussionLink, DonationsLink,
+#             SourcesLink, Version
+# - multiple lines: Description, Screenshots, CompatibleVersions,
+#             Changelog, Requires, Keywords
+#   (each line in a multiline field must start with '- ')
 #
 
 Prefix: /usr/share
