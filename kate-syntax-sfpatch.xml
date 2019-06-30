@@ -6,15 +6,18 @@
         <contexts>
             <context name="patch" attribute="Normal Text" lineEndContext="#stay">
                 <RegExpr attribute="Definition" context="Value"
-                    String="((Prefix|DisplayName|PackageName|Category|Maintainer|Summary|DiscussionLink|DonationsLink|SourcesLink|Version|Release)[ \t]*:[ \t]*)" column="0"
+                    String="((Prefix|Category|Maintainer|Summary|DiscussionLink|DonationsLink|SourcesLink|Version|Release)[ \t]*:[ \t]*)" column="0"
                 />
+                <RegExpr attribute="Definition" context="Title" String="((DisplayName)[ \t]*:[ \t]*)" column="0" />
+                <RegExpr attribute="Definition" context="Package" String="((PackageName)[ \t]*:[ \t]*)" column="0" />
                 <RegExpr attribute="Definition" context="MultilineDefinition"
                     String="((Keywords|Description|Requires|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
                 />
                 <DetectChar char="#" attribute="Comment" context="Comment" firstNonSpace="true" />
             </context>
-            <context name="Value" attribute="Value" lineEndContext="#pop" >
-            </context>
+            <context name="Value" attribute="Value" lineEndContext="#pop" ></context>
+            <context name="Title" attribute="Title" lineEndContext="#pop" ></context>
+            <context name="Package" attribute="Package" lineEndContext="#pop" ></context>
             <context name="MultilineDefinition" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar attribute="Definition" context="Value" char="-" column="0" />
                 <RegExpr attribute="Definition" context="#pop" String=".*[ \t]*:[ \t]*" column="0" lookAhead="true" />
@@ -30,6 +33,8 @@
             <itemData name="Normal Text" defStyleNum="dsError" />
             <itemData name="Comment" defStyleNum="dsComment" />
             <itemData name="Definition" defStyleNum="dsBuiltIn" />
+            <itemData name="Title" defStyleNum="dsKeyword" />
+            <itemData name="Package" defStyleNum="dsOthers" />
             <itemData name="Value" defStyleNum="dsNormal" />
         </itemDatas>
     </highlighting>
