@@ -762,6 +762,18 @@ $value"
 
     }
 
+    __wizard_load_screenshots() {
+        config="$(__get_config_path)" # we assume it has been checked before
+        first_path="$(get_multi_config "$config" "Screenshots" | head -1)"
+        if [[ "${first_path:0:1}" == "/" ]]; then
+            screenshots_path="$(readlink -m "$(dirname "$first_path")")"
+        else
+            screenshots_path="$(readlink -m "$(dirname "$config")")"
+        fi
+        echo -n "$screenshots_path" | xclip -selection c
+        read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
+    }
+
     if [[ "$publish_to_openrepos" == true ]]; then
         echo "running wizard for publishing to OpenRepos..."
         echo "Each value will be copied to the clipboard. Press any key to load the"
@@ -788,10 +800,7 @@ $value"
 
         __wizard_load s "Summary" "Summary"
         __wizard_load m "Description" "Description"
-
-        screenshots_path="$(dirname "$(get_multi_config "$config" "Screenshots" | head -1)")"
-        echo -n "$screenshots_path" | xclip -selection c
-        read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
+        __wizard_load_screenshots
 
         echo -n "$rpm" | xclip -selection c
         read -n 1 -s -p "Application version: $rpm"; echo
@@ -813,12 +822,7 @@ $value"
         __wizard_load s "Discussion link" "DiscussionLink"
         __wizard_load s "Donations link" "DonationsLink"
         __wizard_load s "Sources link" "SourcesLink"
-
-        config="$(__get_config_path)" # safe because we already checked above
-        screenshots_path="$(dirname "$(get_multi_config "$config" "Screenshots" | head -1)")"
-        echo -n "$screenshots_path" | xclip -selection c
-        read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
-
+        __wizard_load_screenshots
         __wizard_load m "Compatible versions" "CompatibleVersions"
         echo -n "$tarball" | xclip -selection c
         read -n 1 -s -p "Patch archive: $tarball"; echo
