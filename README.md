@@ -1,37 +1,44 @@
 
-# SAILFISH-PATCH 1 "" "sailfish-patch 1.1.0 (2019-05-09)"
+# SAILFISH-PATCH 1 "" "sailfish-patch 2.0.0 (2019-06-29)"
 
 ## NAME
-sailfish-patch - Generate diff and scaffold for SailfishOS patches
+sailfish-patch - Manage your SailfishOS patches
 
 ## SYNOPSIS
-`sailfish-patch` [OPTIONS] ...
+`sailfish-patch` [-c NAME]
+`sailfish-patch` [-b] [-p] [-Po] [-Pm]
+`sailfish-patch` [-C FILE]
+`sailfish-patch` [-h] [-V]
+
 
 ## DESCRIPTION
 
-Generate diff for patches and add necessary patch files if they do not exist
-(you need to adapt them to your needs and fill out the 'TODOs').
+Create a new patch skeleton with '-c NAME' and put the original files
+in the new Git branch 'original'. Copy everything to the branch 'master' and
+make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 
-Run '$script' in a git repository, where all the patched
-QML files reside. It expects a branch 'original' with all original qml
-files without changes in the same directory structure.
-
-Define a prefix for the path if your directory structure does not start with '/'
-by putting the prefix in a file 'build/dir' in the root of your project.
-
-The paths in the resulting diff will be set accordingly.
-
-Note: the script has to be run in the root directory of your project.
-
-Warning: the script has to be adapted for the publish feature to work in your setup!
+Note: separate settings pages are currently only supported via Patchmanager.
 
 
 ## OPTIONS
-`-b, --build`
-  build RPM
 
-`-p, --publish`
-  publish and install patch (remotely on device)
+`-c, --create NAME`
+  Create new patch skeleton in NAME
+
+`-C, --check-config FILE`
+  Validate config file FILE
+
+`-b, --build`
+  Build RPM and tarball
+
+`-p, --publish-ssh`
+  Publish and install patch on your device via ssh
+
+`-Po, --publish-openrepos`
+  Wizard for publishing in OpenRepos
+
+`-Pm, --publish-patchmanager`
+  Wizard for publishing in PM's online catalogue
 
 ### General Information
 `-h, --help`
@@ -39,6 +46,28 @@ Warning: the script has to be adapted for the publish feature to work in your se
 
 `-V, --version`
   Show version and licensing information about `sailfish-patch`.
+
+
+## CONFIGURATION FILES
+
+Read the sample configuration file provided with this script for detailed documentation.
+
+To enable syntax highlighting in KDE's text editor Kate put the syntax highlighting
+definition file provided with this script in the following directory:
+
+  $HOME/.local/share/org.kde.syntax-highlighting/syntax/
+
+## ENVIRONMENT
+
+`SF_PATCH_PASSFILE`
+  Path to a local file containing your devel-su passphrase
+
+`SF_PATCH_SSH_TARGET`
+  How to connect to your device via ssh (config name or IP)
+
+`SF_PATCH_REMOTE_PATH`
+  Path to a directory where patch RPMs will be stored on your device
+
 
 ## EXIT STATUS
 
@@ -76,14 +105,14 @@ libraries. Make sure they are all installed and setup correctly.
 
 * git
 * sed
-* private-mount
-* private-umount
 * scp
 * ssh
 * rpmbuild
+* xclip
+* tar
 
 ## AUTHOR
-Written by Mirian Margiani based on `sailfish-patch` by Cornerman.
+Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman.
 
 ## COPYRIGHT
 Copyright (C) 2016  Cornerman, 2018-2019  Mirian Margiani

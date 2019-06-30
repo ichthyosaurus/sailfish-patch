@@ -20,6 +20,8 @@
 #
 #
 
+DEPENDENCIES=(git sed scp ssh rpmbuild xclip tar)
+
 # check environment variables
 publish_via_ssh_possible=true
 if [[ -z "$SF_PATCH_PASSFILE" ]]; then
@@ -42,8 +44,6 @@ abort() {
     pkill -P $TOP_PID
     kill -s TERM $TOP_PID
 }
-
-DEPENDENCIES=(git sed scp ssh rpmbuild xclip)
 
 dependencies() { # 1: echo/no-echo
     ret=0
