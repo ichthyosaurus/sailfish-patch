@@ -351,11 +351,13 @@ if [[ "$check_config" == true ]]; then
         # multi line
         if [[ "$is_single" == false ]]; then
             case "$key" in
-                Screenshots|Changelog|Requires)
+                Screenshots|Changelog|Requires|Keywords)
+                    # regular fields
                     is_multiline="$key"
                     is_multiline_at="$count"
                 ;;
                 Description|CompatibleVersions)
+                    # required fields
                     is_multiline="$key"
                     is_multiline_at="$count"
                     is_multiline_required=true
@@ -749,10 +751,16 @@ $value"
 
         echo -n "Applications -> Patches" | xclip -selection c
         read -n 1 -s -p "Category: Applications -> Patches"; echo
-        echo -n "" | xclip -selection c
-        read -n 1 -s -p "Keywords: (not yet supported)"; echo
+
+        readarray -t keywords <<<"$(get_multi_config "$config" "Keywords")"
+        for i in "${keywords[@]}"; do
+            echo -n "$i" | xclip -selection c
+            read -n 1 -s -p "Keyword: $i"; echo
+        done
+
         echo -n "$icon_file" | xclip -selection c
         read -n 1 -s -p "Icon: $icon_file"; echo
+
         __wizard_load s "Summary" "Summary"
         __wizard_load m "Description" "Description"
 
