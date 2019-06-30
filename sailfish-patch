@@ -329,6 +329,9 @@ if [[ "$check_config" == true ]]; then
                 elif echo "$value" | grep -Pqoe "^[-_]"; then
                     echo "error: package name must not start with '-' or '_' (line $count)" >/dev/stderr
                     error=true
+                elif [[ "$value" == "sfos-patch-category-name" ]]; then
+                    echo "error: package name not set (line $count)" >/dev/stderr
+                    error=true
                 fi
             ;;
             Category)
