@@ -329,7 +329,7 @@ if [[ "$check_config" == true ]]; then
                 fi
                 # needs special rules
                 if ! echo "$value" | grep -Pqoe '^[0-9]+\.[0-9]+\.[0-9]+'; then
-                    echo "error: version number must consist of three numbers separated by dots (X.Y.Z)" >/dev/stderr
+                    echo "error: version number must consist of three numbers separated by dots (X.Y.Z; line $count)" >/dev/stderr
                     error=true
                 fi
             ;;
@@ -354,9 +354,15 @@ if [[ "$check_config" == true ]]; then
             esac
         fi
 
-        keys_found+=("$key")
+        if printf "%s\n" "${keys_found[@]}" | grep -Pqoe "^$key"; then
+            echo "error: field '$key' is defined more than once (line $count)" >/dev/stderr
+            error=true
+        else
+            keys_found+=("$key")
+        fi
     done < "$check_config_name"
 
+    # check for required fields
     for r in DisplayName PackageName Category Maintainer Summary Version Release Description CompatibleVersions; do
         if ! printf "%s\n" "${keys_found[@]}"  | grep -Pqoe "^$r"; then
             echo "error: required field '$r' is missing" >/dev/stderr
