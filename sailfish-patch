@@ -767,8 +767,10 @@ $value"
         first_path="$(get_multi_config "$config" "Screenshots" | head -1)"
         if [[ "${first_path:0:1}" == "/" ]]; then
             screenshots_path="$(readlink -m "$(dirname "$first_path")")"
-        else
+        elif [[ -n "$first_path" ]]; then
             screenshots_path="$(readlink -m "$(dirname "$config")")"
+        else
+            screenshots_path=
         fi
         echo -n "$screenshots_path" | xclip -selection c
         read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
