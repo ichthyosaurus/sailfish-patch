@@ -734,6 +734,9 @@ Requires: $r" rpm.spec
             exit 2
         fi
 
+        config="$(__get_config_path)" # we assume it has been checked before
+        package_name="$(get_single_config "$config" "PackageName")"
+
         scp "$rpm" nemo@"$SF_PATCH_SSH_TARGET":"$SF_PATCH_REMOTE_PATH"
         head -1 "$SF_PATCH_PASSFILE" | ssh "$SF_PATCH_SSH_TARGET" "devel-su pkcon -y install-local '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"
         head -1 "$SF_PATCH_PASSFILE" | ssh "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"
