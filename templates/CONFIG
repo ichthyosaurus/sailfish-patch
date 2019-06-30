@@ -1,6 +1,6 @@
 #
 # SailfishOS Patch Configuration File
-# for gen-sailfish-patch
+# for sailfish-patch
 #
 # Note: the file will be read line-by-line and
 # only the following fields are recognized:

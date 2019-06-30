@@ -1,4 +1,5 @@
 #!/bin/bash
+# kate: syntax bash
 #
 # sailfish-patch 2.0.0 (2019-06-29)
 # Copyright (C) 2016  Cornerman (https://github.com/cornerman/sailfish-patch)
@@ -17,7 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# kate: syntax bash
 #
 
 # BEGIN CONFIGURATION
