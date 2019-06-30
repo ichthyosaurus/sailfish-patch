@@ -685,12 +685,15 @@ else
         done
 
         description="$(get_multi_config "$config" "Description")"
-        sed -i "s/@DESCRIPTION@/$description/g" "$rpm_build_dir/patch.json"
+        description="${description//\"/\\\\\"}" # escape quotes
+        awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
+            "$rpm_build_dir/patch.json" > _tmp && mv _tmp "$rpm_build_dir/patch.json"
 
         requires="$(get_multi_config "$config" "Requires")"
         if [[ -n "$requires" ]]; then
             readarray -t req_lines <<<"$(echo "$requires")"
             for r in "${req_lines[@]}"; do
+                r="${r//\//\\/}" # escape slashes
                 sed -i "/@REQUIRES@/i\
 Requires: $r" rpm.spec
             done
