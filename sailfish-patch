@@ -20,13 +20,20 @@
 #
 #
 
-# BEGIN CONFIGURATION
-# The following variables have to be adapted for the publish feature
-# to work in your setup.
-SF_PATCH_PASSFILE=~/Private/.sfos-passphrase  # path to a local file containing your devel-su passphrase
-SF_PATCH_REMOTE_PATH=/home/nemo/Devel/Patches  # path to a directory where patches' RPMs will be stored on your phone
-SF_PATCH_SSH_TARGET=handy  # how to connect to your phone via ssh; config name or IP...
-# END   CONFIGURATION
+# check environment variables
+publish_via_ssh_possible=true
+if [[ -z "$SF_PATCH_PASSFILE" ]]; then
+    publish_via_ssh_possible=false
+fi
+
+if [[ -z "$SF_PATCH_SSH_TARGET" ]]; then
+    publish_via_ssh_possible=false
+fi
+
+if [[ -z "$SF_PATCH_REMOTE_PATH" ]]; then
+    SF_PATCH_REMOTE_PATH="/home/nemo"
+fi
+
 
 trap "exit 2" TERM
 export TOP_PID=$$
@@ -92,13 +99,12 @@ Create a new patch skeleton with '-c NAME' and put the original files
 in the new Git branch 'original'. Copy everything to the branch 'master' and
 make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 
-Note: separate settings pages are not yet supported in RPMs.
-Warning: the script has to be adapted for the publish-via-ssh feature
-         to work in your setup!
+Note: separate settings pages are currently only supported via Patchmanager.
 
 Usage:
     $script -c NAME
-    $script [-b] [-p]
+    $script [-b] [-p] [-Po] [-Pm]
+    $script -C FILE
     $script [-h] [-V]
 
 Arguments:
@@ -110,6 +116,14 @@ Arguments:
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
     -V, --version               - show version and license information
     -h, --help                  - show this help and exit
+
+Environment:
+    - path to a local file containing your devel-su passphrase
+        SF_PATCH_PASSFILE=$SF_PATCH_PASSFILE
+    - how to connect to your device via ssh (config name or IP)
+        SF_PATCH_SSH_TARGET=$SF_PATCH_SSH_TARGET
+    - path to a directory where patch RPMs will be stored on your device
+        SF_PATCH_REMOTE_PATH=$SF_PATCH_REMOTE_PATH
 "
 }
 
@@ -149,7 +163,14 @@ while [[ $# > 0 ]]; do
             fi
         ;;
         -b|--build) build=true;;
-        -p|--publish-ssh) publish_via_ssh=true;;
+        -p|--publish-ssh)
+            if [[ "$publish_via_ssh_possible" == false ]]; then
+                echo "error: environment not set up correctly for publishing via ssh" >/dev/stderr
+                exit 1
+            else
+                publish_via_ssh=true
+            fi
+        ;;
         -Po|--publish-openrepos) publish_to_openrepos=true;;
         -Pm|--publish-patchmanager) publish_to_pm_catalogue=true;;
         -*) echo "unknown option: $1";;
