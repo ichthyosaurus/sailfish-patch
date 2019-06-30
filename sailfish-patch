@@ -825,7 +825,7 @@ $value"
         __wizard_load s "Donations link" "DonationsLink"
         __wizard_load s "Sources link" "SourcesLink"
         __wizard_load_screenshots
-        __wizard_load m "Version" "Version"
+        __wizard_load s "Version" "Version"
         __wizard_load m "Compatible versions" "CompatibleVersions"
         echo -n "$tarball" | xclip -selection c
         read -n 1 -s -p "Patch archive: $tarball"; echo
