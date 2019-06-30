@@ -234,7 +234,7 @@ if [[ "$check_config" == true ]]; then
 
         if [[ -z "$line" ]]; then
             continue
-        elif [[ "$line" == "#"* || "$line" == ";"* ]]; then
+        elif [[ "$line" == "#"* ]]; then
             continue
         fi
 
@@ -303,6 +303,7 @@ if [[ "$check_config" == true ]]; then
                 # needs special rules
                 if echo "$value" | grep -Pqoe "[^a-zA-Z0-9-_]"; then
                     echo "error: package name contains invalid characters (line $count)" >/dev/stderr
+                    echo "       allowed are: a-z, A-Z, 0-9, -, _ (no spaces)"
                     error=true
                 elif echo "$value" | grep -Pqoe "^[-_]"; then
                     echo "error: package name must not start with '-' or '_' (line $count)" >/dev/stderr
@@ -434,7 +435,7 @@ get_multi_config() { # 1: config file, 2: key, 3: default value
 
         case "$first" in
             -) selected+=("$(trim "${l:1}")");;
-            "#"|";") echo -n;;  # ignore comments
+            "#") echo -n;;  # ignore comments
             *)  if [[ "$l" == *":"* ]]; then
                     break # is next key; done
                 else
