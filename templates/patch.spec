@@ -7,8 +7,12 @@ Group: System/Patches
 License: GPLv3
 Packager: @MAINTAINER@
 Source0: %{name}-%{version}.tar.xz
+Obsoletes: %{name} <= %{version}
+Provides: %{name} = %{version}
 Requires: patchmanager
 @REQUIRES@
+@OBSOLETES@
+@CONFLICTS@
 
 %description
 %{summary}

@@ -373,7 +373,7 @@ if [[ "$check_config" == true ]]; then
         # multi line
         if [[ "$is_single" == false ]]; then
             case "$key" in
-                Screenshots|Changelog|Requires|Keywords)
+                Screenshots|Changelog|Requires|Keywords|Conflicts|Obsoletes)
                     # regular fields
                     is_multiline="$key"
                     is_multiline_at="$count"
@@ -689,16 +689,18 @@ else
         awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
             "$rpm_build_dir/patch.json" > _tmp && mv _tmp "$rpm_build_dir/patch.json"
 
-        requires="$(get_multi_config "$config" "Requires")"
-        if [[ -n "$requires" ]]; then
-            readarray -t req_lines <<<"$(echo "$requires")"
-            for r in "${req_lines[@]}"; do
-                r="${r//\//\\/}" # escape slashes
-                sed -i "/@REQUIRES@/i\
-Requires: $r" rpm.spec
-            done
-        fi
-        sed -i "s/@REQUIRES@//g" rpm.spec
+        for i in Requires Obsoletes Conflicts; do
+            values="$(get_multi_config "$config" "$i")"
+            if [[ -n "$values" ]]; then
+                readarray -t m_lines <<<"$(echo "$values")"
+                for l in "${m_lines[@]}"; do
+                    l="${l//\//\\/}" # escape slashes
+                    sed -i "/@${i^^}@/i\
+$i: $l" rpm.spec
+                done
+            fi
+            sed -i "s/@${i^^}@//g" rpm.spec
+        done
 
         # build rpm
         echo "building RPM..."

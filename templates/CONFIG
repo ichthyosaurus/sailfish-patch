@@ -6,8 +6,9 @@
 # - one line: Prefix, DisplayName, PackageName, Category,
 #             Maintainer, Summary, DiscussionLink, DonationsLink,
 #             SourcesLink, Version
-# - multiple lines: Description, Screenshots, CompatibleVersions,
-#             Changelog, Requires, Keywords
+# - multiple lines: Keywords, Description, Screenshots,
+#             CompatibleVersions, Changelog, Requires,
+#             Obsoletes, Conflicts
 #   (each line in a multiline field must start with '- ')
 #
 
@@ -54,8 +55,15 @@ Requires:
 - jolla-keyboard
 - jolla-xt9 >= 0.5.9
 
+# Conflicts:
+# - my-conflicting-package = 0.0.1
+# - the-old-name
+#
+# Obsoletes:
+# - the-other-old-name
+
 Screenshots:
-- /home/user/screen-1.png
+- screenshot-1.png
 - /home/user/screen-2.png
 - path/relative/to/build/dir/screen-3.png
 
@@ -90,7 +98,8 @@ CompatibleVersions:
 - 3.0.3.10
 
 Changelog:
-- your changelog
-- in as many lines as you wish
+- initial public release
+- ...your changelog
+- in as many lines as you wish...
 
 # kate: syntax SailfishOS Patch

@@ -11,7 +11,7 @@
                 <RegExpr attribute="Definition" context="Title" String="((DisplayName)[ \t]*:[ \t]*)" column="0" />
                 <RegExpr attribute="Definition" context="Package" String="((PackageName)[ \t]*:[ \t]*)" column="0" />
                 <RegExpr attribute="Definition" context="MultilineDefinition"
-                    String="((Keywords|Description|Requires|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
+                    String="((Keywords|Description|Requires|Obsoletes|Conflicts|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
                 />
                 <DetectChar char="#" attribute="Comment" context="Comment" firstNonSpace="true" />
             </context>
