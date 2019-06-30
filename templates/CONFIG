@@ -92,3 +92,5 @@ CompatibleVersions:
 Changelog:
 - your changelog
 - in as many lines as you wish
+
+# kate: syntax SailfishOS Patch

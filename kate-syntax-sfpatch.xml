@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+
+<language name="SailfishOS Patch" section="Configuration" extensions="CONFIG" mimetype="" version="1" kateversion="2.4" author="Mirian Margiani (mirian@margiani.ch)" license="GPL">
+    <highlighting>
+        <contexts>
+            <context name="patch" attribute="Normal Text" lineEndContext="#stay">
+                <RegExpr attribute="Definition" context="Value"
+                    String="((Prefix|DisplayName|PackageName|Category|Maintainer|Summary|DiscussionLink|DonationsLink|SourcesLink|Version|Release)[ \t]*:[ \t]*)" column="0"
+                />
+                <RegExpr attribute="Definition" context="MultilineDefinition"
+                    String="((Keywords|Description|Requires|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
+                />
+                <DetectChar char="#" attribute="Comment" context="Comment" firstNonSpace="true" />
+            </context>
+            <context name="Value" attribute="Value" lineEndContext="#pop" >
+            </context>
+            <context name="MultilineDefinition" attribute="Normal Text" lineEndContext="#stay">
+                <DetectChar attribute="Definition" context="Value" char="-" column="0" />
+                <RegExpr attribute="Definition" context="#pop" String=".*[ \t]*:[ \t]*" column="0" lookAhead="true" />
+            </context>
+            <context name="Comment" attribute="Comment" lineEndContext="#pop">
+                <DetectSpaces />
+                <IncludeRules context="##Alerts" />
+                <IncludeRules context="##Modelines" />
+                <DetectIdentifier />
+            </context>
+        </contexts>
+        <itemDatas>
+            <itemData name="Normal Text" defStyleNum="dsError" />
+            <itemData name="Comment" defStyleNum="dsComment" />
+            <itemData name="Definition" defStyleNum="dsBuiltIn" />
+            <itemData name="Value" defStyleNum="dsNormal" />
+        </itemDatas>
+    </highlighting>
+
+    <general>
+        <comments>
+            <comment name="singleLine" start="#" />
+        </comments>
+    </general>
+</language>
