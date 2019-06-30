@@ -720,6 +720,9 @@ Requires: $r" rpm.spec
             echo "success: tarball built"
             mv --backup=t "$tarball" "$build_dir"
         fi
+
+        rm -r "$temp_build_dir"
+        cd "$base"
     fi
 
     if [[ "$publish_via_ssh" == true ]]; then
