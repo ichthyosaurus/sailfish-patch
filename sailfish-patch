@@ -259,12 +259,12 @@ if [[ "$check_config" == true ]]; then
             continue
         fi
 
-        if [[ -n "$is_multiline" ]] && [[ "$line" == "- "* ]]; then
+        if [[ -n "$is_multiline" ]] && [[ "$line" == "-"* ]]; then
             lines_for_multi="$((lines_for_multi+1))"
-            value="$(trim "${value#- }")"
+            value="$(trim "${value#-}")"
 
             if [[ "$is_multiline" == "Screenshots" ]]; then
-                if [[ ! -f "$value" && ! -f "$(basename "$check_config_name")/$value" ]]; then
+                if [[ ! -f "$value" ]] && [[ ! -f "$(dirname "$check_config_name")/$value" ]]; then
                     echo "error: screenshot file '$value' not found (line $count)" >/dev/stderr
                     error=true
                 fi
