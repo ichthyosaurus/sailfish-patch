@@ -68,6 +68,15 @@ definition file provided with this script in the following directory:
 `SF_PATCH_REMOTE_PATH`
   Path to a directory where patch RPMs will be stored on your device
 
+## ADDING NEW CONFIGURATION FIELDS
+
+To add a new configuration field, you have to update the following places:
+
+- check_defaults array with default dummy value (if necessary)
+- add the field to the list of required fields
+- and to the single line or multi line check switches
+- add the field to all wizards where it is needed
+- update the Kate syntax file
 
 ## EXIT STATUS
 

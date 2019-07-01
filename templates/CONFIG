@@ -34,8 +34,6 @@ Category: Others
 #     Others
 Keywords:
 - Patch
-- Other Keyword
-- Stuff
 
 Maintainer: username
 Summary: short summary for package managers
@@ -52,15 +50,14 @@ Release: N
 
 Requires:
 - sailfish-version >= 3.0.0
-- jolla-keyboard
-- jolla-xt9 >= 0.5.9
+- another-required-package
 
-# Conflicts:
-# - my-conflicting-package = 0.0.1
-# - the-old-name
-#
-# Obsoletes:
-# - the-other-old-name
+Conflicts:
+- my-conflicting-package = 0.0.1
+- the-old-name
+
+Obsoletes:
+- the-other-old-name
 
 Screenshots:
 - screenshot-1.png
@@ -99,7 +96,5 @@ CompatibleVersions:
 
 Changelog:
 - initial public release
-- ...your changelog
-- in as many lines as you wish...
 
 # kate: syntax SailfishOS Patch

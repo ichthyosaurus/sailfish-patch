@@ -179,7 +179,7 @@ while [[ $# > 0 ]]; do
     shift
 done
 
-categories="Homescreen
+check_categories="Homescreen
 Browser
 Camera
 Calendar
@@ -195,7 +195,7 @@ Settings
 Keyboard
 Others"
 
-versions="1.1.9.30
+check_versions="1.1.9.30
 2.0.2.51
 2.0.4.14
 2.0.5.6
@@ -224,6 +224,28 @@ versions="1.1.9.30
 3.0.3.9
 3.0.3.10"
 
+declare -A check_defaults=(
+[Prefix]=""
+[DisplayName]="Pretty Name"
+[PackageName]="sfos-patch-category-name"
+[Category]=""
+[Keywords]=""
+[Maintainer]="username"
+[Summary]="short summary for package managers"
+[Description]="long description for the store|possibly spanning over multiple lines"
+[DiscussionLink]="https://example.org/discussion"
+[DonationsLink]="https://example.org/donations"
+[SourcesLink]="https://example.org/sources"
+[Version]=""
+[Release]=""
+[Requires]="another-required-package"
+[Conflicts]="my-conflicting-package = 0.0.1|the-old-name"
+[Obsoletes]="the-other-old-name"
+[Screenshots]=""
+[CompatibleVersions]=""
+[Changelog]=""
+)
+
 trim() {
     local var="$*"
     var="${var#"${var%%[![:space:]]*}"}"
@@ -233,11 +255,36 @@ trim() {
 
 if [[ "$check_config" == true ]]; then
     if [[ ! -f "$check_config_name" ]]; then
-        echo "error: could not find configuration file!" >/dev/stderr
+        echo "error: could not find configuration file" >/dev/stderr
         exit 2
     fi
 
     # check keys and references, files, screenshots
+    __check_default_value() { # 1: key, 2: value to check, 3: line
+        local key="$1"
+        local value="$2"
+        local line="$3"
+
+        if [[ -z "$value" ]]; then
+            return 0
+        fi
+
+        if echo "$value" | grep -Pqoe "@[^ ]+@"; then
+            echo "error: field '$key' is not configured ($value; line $line)"
+            return 1
+        fi
+
+        if [[ -z "${check_defaults[$key]}" ]]; then
+            return 0
+        elif echo "${check_defaults[$key]}" | sed 's/|/\n/g' |\
+                grep -Pqoe "^$(echo "$value" | sed 's/[][\.|$(){}?+*^]/\\&/g')"; then
+            echo "error: field '$key' still contains a dummy value (line $line)"
+            return 1
+        else
+            return 0
+        fi
+    }
+
     error=false
     count=0
     keys_found=()
@@ -263,16 +310,22 @@ if [[ "$check_config" == true ]]; then
             lines_for_multi="$((lines_for_multi+1))"
             value="$(trim "${value#-}")"
 
+            # BEGIN value checks for multi line fields
             if [[ "$is_multiline" == "Screenshots" ]]; then
                 if [[ ! -f "$value" ]] && [[ ! -f "$(dirname "$check_config_name")/$value" ]]; then
                     echo "error: screenshot file '$value' not found (line $count)" >/dev/stderr
                     error=true
                 fi
             elif [[ "$is_multiline" == "CompatibleVersions" ]]; then
-                if ! echo "$versions" | grep -Pqoe "^$value"; then
+                if ! echo "$check_versions" | grep -Pqoe "^$value"; then
                     echo "error: invalid version '$value' (line $count)" >/dev/stderr
                     error=true
                 fi
+            fi
+            # END value checks for multi line fields
+
+            if ! __check_default_value "$is_multiline" "$value" "$count"; then
+                error=true
             fi
 
             continue
@@ -299,6 +352,7 @@ if [[ "$check_config" == true ]]; then
             is_multiline_required=false
         fi
 
+        # BEGIN value checks for single line fields
         # single line
         is_single=true
         case "$key" in
@@ -329,7 +383,7 @@ if [[ "$check_config" == true ]]; then
                 elif echo "$value" | grep -Pqoe "^[-_]"; then
                     echo "error: package name must not start with '-' or '_' (line $count)" >/dev/stderr
                     error=true
-                elif [[ "$value" == "sfos-patch-category-name" ]]; then
+                elif [[ "$value" == "${check_defaults[$key]}" ]]; then
                     echo "error: package name not set (line $count)" >/dev/stderr
                     error=true
                 fi
@@ -341,7 +395,7 @@ if [[ "$check_config" == true ]]; then
                     error=true
                 fi
                 # needs special rules
-                if ! echo "$categories" | grep -Pqoe "^$value"; then
+                if ! echo "$check_categories" | grep -Pqoe "^$value"; then
                     echo "error: invalid category '$value' on line $count" >/dev/stderr
                     error=true
                 fi
@@ -372,6 +426,7 @@ if [[ "$check_config" == true ]]; then
             ;;
             *) is_single=false;;
         esac
+        # END value checks for single line fields
 
         # multi line
         if [[ "$is_single" == false ]]; then
@@ -391,6 +446,10 @@ if [[ "$check_config" == true ]]; then
                     error=true
                 ;;
             esac
+        fi
+
+        if ! __check_default_value "$key" "$value" "$count"; then
+            error=true
         fi
 
         if printf "%s\n" "${keys_found[@]}" | grep -Pqoe "^$key"; then
@@ -478,7 +537,7 @@ get_multi_config() { # 1: config file, 2: key, 3: default value
 
 require_templates() {
     if [[ ! -d "$template_dir" ]]; then
-        echo "error: template directory not found!" >/dev/stderr
+        echo "error: template directory not found" >/dev/stderr
         abort
     fi
 
@@ -625,7 +684,7 @@ else
         orig_branch="$(git branch --list | grep -E '^\s*original$')"
 
         if [[ -z "$orig_branch" ]]; then
-            echo "error: missing 'original' branch!" >/dev/stderr
+            echo "error: missing 'original' branch" >/dev/stderr
             echo "       Create this branch and commit the original QML files without any changes." >/dev/stderr
             echo "       The diff is created based on this branch." >/dev/stderr
             exit 2
@@ -738,7 +797,7 @@ $i: $l" rpm.spec
         rpm="$(require_current_package rpm)"
 
         if [[ ! -f "$SF_PATCH_PASSFILE" ]]; then
-            echo "error: passphrase file not found!" >/dev/stderr
+            echo "error: passphrase file not found" >/dev/stderr
             exit 2
         fi
 
