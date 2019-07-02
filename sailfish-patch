@@ -351,6 +351,14 @@ if [[ "$check_config" == true ]]; then
                 # may be empty
                 if [[ -z "$value" ]]; then
                     echo "note: no value given for '$key'"
+                else
+                    # special rules
+                    if [[ "$key" == "Prefix" ]]; then
+                        if [[ "$value" != "/"* ]]; then
+                            echo "error: prefix must be an absolute path ($value; line $count)"
+                            error=true
+                        fi
+                    fi
                 fi
             ;;
             DisplayName|Maintainer|Summary)
