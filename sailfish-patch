@@ -36,15 +36,6 @@ if [[ -z "$SF_PATCH_REMOTE_PATH" ]]; then
     SF_PATCH_REMOTE_PATH="/home/nemo"
 fi
 
-
-trap "exit 2" TERM
-export TOP_PID=$$
-
-abort() {
-    pkill -P $TOP_PID
-    kill -s TERM $TOP_PID
-}
-
 dependencies() { # 1: echo/no-echo
     ret=0
     print=
@@ -538,15 +529,17 @@ get_multi_config() { # 1: config file, 2: key, 3: default value
 require_templates() {
     if [[ ! -d "$template_dir" ]]; then
         echo "error: template directory not found" >/dev/stderr
-        abort
+        return 1
     fi
 
     for i in "$json_file" "$gitignore_file" "$spec_file" "$license_file" "$config_file" "$icon_file"; do
         if [[ ! -f "$i" ]]; then
             echo "error: template '$i' not found" >/dev/stderr
-            abort
+            return 1
         fi
     done
+
+    return 0
 }
 
 config_checker="$0"
@@ -554,45 +547,46 @@ require_config() { # 1: expected config file location
     local config="$1"
     if [[ ! -f "$config" ]]; then
         echo "error: could not find config file" >/dev/stderr
-        abort
+        return 1
     else
         "$config_checker" --check-config "$config"
 
         if (( $? != 0 )); then
             echo "error: config file contains errors" >/dev/stderr
             echo "       please check the output above and try again" >/dev/stderr
-            abort
+            return 1
         fi
     fi
+
+    return 0
 }
 
 # return unchecked base config path to be used
 # in validator functions
 __get_config_path() {
-    echo -n "$(pwd)/build/CONFIG"
-}
-
-require_build_config() {
-    # require build dir
-    local build_dir="$(dirname "$(__get_config_path)")"
-    if [[ ! -d "$build_dir" ]]; then
-        echo "error: could not find build directory" >/dev/stderr
-        abort
+    if [[ -f "$(pwd)/CONFIG" ]]; then
+        if [[ -f "$(pwd)/build/CONFIG" ]]; then
+            echo "warning: two config files found (in '$(pwd)' and '.../build')" >/dev/stderr
+            echo "         using the first one" >/dev/stderr
+        fi
+        echo -n "$(pwd)/CONFIG"
+    else
+        echo -n "$(pwd)/build/CONFIG"
     fi
-
-    # require valid config
-    local config="$(__get_config_path)"
-    require_config "$config"
-
-    # return valid config path
-    # MUST be directly below 'build'
-    echo -n "$config"
 }
 
-require_current_package() { # 1: type (rpm/tarball)
+# return unchecked base build path to be used in
+# validator functions
+__get_build_path() {
+    echo -n "$(pwd)/build"
+}
+
+# return path of latest package build
+# assumes build path and config have been checked before
+__get_package_path() { # 1: type (rpm/tarball)
     if [[ "$1" != "rpm" && "$1" != "tarball" ]]; then
         echo "internal error: invalid package type requested" >/dev/stderr
-        abort
+        return 1
     fi
 
     local extension=""
@@ -602,25 +596,45 @@ require_current_package() { # 1: type (rpm/tarball)
         extension="tar.gz"
     fi
 
-    local config="$(require_build_config)"
-    local build_dir="$(dirname "$config")"
+    package_name="$(get_single_config "$(__get_config_path)" "PackageName")"
+    package="$(find "$(__get_build_path)" -maxdepth 1 -iname "$package_name-*.$extension" | sort --version-sort | tail -1)"
+    echo -n "$package"
+}
+
+require_build_config() {
+    # require build dir
+    local build_dir="$(__get_build_path)"
+    if [[ ! -d "$build_dir" ]]; then
+        echo "error: could not find build directory" >/dev/stderr
+        return 1
+    fi
+
+    # require valid config
+    local config="$(__get_config_path)"
+    require_config "$config" || return 1
+
+    return 0
+}
+
+require_current_package() { # 1: type (rpm/tarball)
+    require_build_config || return 1
+    local config="$(__get_config_path)"
+    local build_dir="$(__get_build_path)"
 
     # find package file
-    package_name="$(get_single_config "$(__get_config_path)" "PackageName")"
-    package="$(find "$build_dir" -maxdepth 1 -iname "$package_name-*.$extension" | sort --version-sort | tail -1)"
+    package="$(__get_package_path "$1")"
 
     if [[ -z "$package" ]]; then
         echo "error: no $1 found" >/dev/stderr
-        abort
+        return 1
     fi
 
-    # return valid package path
-    echo -n "$package"
+    return 0
 }
 
 
 if [[ "$create_new" == true ]]; then
-    require_templates
+    require_templates || exit 1
 
     if [[ -e "$create_new_name" ]]; then
         echo "error: the file or directory with the name '$create_new_name' already exists" >/dev/stderr
@@ -691,12 +705,13 @@ else
         fi
 
         # require valid config and build directory
+        require_build_config || exit 1
         base="$(pwd)"
-        config="$(require_build_config)"
-        build_dir="$(dirname "$config")"
+        config="$(__get_config_path)"
+        build_dir="$(__get_build_path)"
 
         # require templates
-        require_templates
+        require_templates || exit 1
 
         # create temp dir
         temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
@@ -795,7 +810,8 @@ $i: $l" rpm.spec
 
     if [[ "$publish_via_ssh" == true ]]; then
         echo "deploying patch..."
-        rpm="$(require_current_package rpm)"
+        require_current_package rpm || exit 1
+        rpm="$(__get_package_path rpm)"
 
         if [[ ! -f "$SF_PATCH_PASSFILE" ]]; then
             echo "error: passphrase file not found" >/dev/stderr
@@ -839,7 +855,8 @@ $value"
         if [[ "${first_path:0:1}" == "/" ]]; then
             screenshots_path="$(readlink -m "$(dirname "$first_path")")"
         elif [[ -n "$first_path" ]]; then
-            screenshots_path="$(readlink -m "$(dirname "$config")")"
+            # relative paths are relative to the config file
+            screenshots_path="$(readlink -m "$(dirname "$(__get_config_path)")")"
         else
             screenshots_path=
         fi
@@ -852,7 +869,8 @@ $value"
         echo "Each value will be copied to the clipboard. Press any key to load the"
         echo "next value."
         echo
-        rpm="$(require_current_package rpm)"
+        require_current_package rpm || exit 1
+        rpm="$(__get_package_path rpm)"
         config="$(__get_config_path)" # safe because we already checked above
 
         name="$(get_single_config "$config" "DisplayName")"
@@ -886,7 +904,8 @@ $value"
         echo "Each value will be copied to the clipboard. Press any key to load the"
         echo "next value."
         echo
-        tarball="$(require_current_package tarball)"
+        require_current_package tarball || exit 1
+        tarball="$(__get_package_path tarball)"
 
         __wizard_load s "Internal name" "PackageName"
         __wizard_load s "Display name" "DisplayName"

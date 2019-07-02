@@ -62,7 +62,7 @@ Obsoletes:
 Screenshots:
 - screenshot-1.png
 - /home/user/screen-2.png
-- path/relative/to/build/dir/screen-3.png
+- path/relative/to/config/file/location/screen-3.png
 
 CompatibleVersions:
 - 1.1.9.30
