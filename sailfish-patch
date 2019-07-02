@@ -748,6 +748,7 @@ else
 
         description="$(get_multi_config "$config" "Description")"
         description="${description//\"/\\\\\"}" # escape quotes
+        description="${description//&/\\\\&}" # escape ampersand
         awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
             "$rpm_build_dir/patch.json" > _tmp && mv _tmp "$rpm_build_dir/patch.json"
 
