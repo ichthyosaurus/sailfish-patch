@@ -10,16 +10,31 @@
                 />
                 <RegExpr attribute="Definition" context="Title" String="((DisplayName)[ \t]*:[ \t]*)" column="0" />
                 <RegExpr attribute="Definition" context="Package" String="((PackageName)[ \t]*:[ \t]*)" column="0" />
+                <RegExpr attribute="Definition" context="MultilinePackagesDefinition"
+                    String="((SourcePackages|Requires|Obsoletes|Conflicts)[ \t]*:[ \t]*)" column="0"
+                />
                 <RegExpr attribute="Definition" context="MultilineDefinition"
-                    String="((Keywords|Description|Requires|Obsoletes|Conflicts|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
+                    String="((Keywords|Description|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
                 />
                 <DetectChar char="#" attribute="Comment" context="Comment" firstNonSpace="true" />
             </context>
             <context name="Value" attribute="Value" lineEndContext="#pop" ></context>
             <context name="Title" attribute="Title" lineEndContext="#pop" ></context>
-            <context name="Package" attribute="Package" lineEndContext="#pop" ></context>
+            <context name="Package" attribute="Package" lineEndContext="#pop" >
+                <Detect2Chars char="&lt;" char1="=" context="#stay" attribute="Comparison" />
+                <Detect2Chars char="&gt;" char1="=" context="#stay" attribute="Comparison" />
+                <DetectChar char="&gt;" context="#stay" attribute="Comparison" />
+                <DetectChar char="&lt;" context="#stay" attribute="Comparison" />
+                <DetectChar char="=" context="#stay" attribute="Comparison" />
+            </context>
             <context name="MultilineDefinition" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar attribute="Definition" context="Value" char="-" column="0" />
+                <DetectChar attribute="Definition" context="#pop" char="#" firstNonSpace="true" lookAhead="true" />
+                <RegExpr attribute="Definition" context="#pop" String=".*[ \t]*:[ \t]*" column="0" lookAhead="true" />
+            </context>
+            <context name="MultilinePackagesDefinition" attribute="Normal Text" lineEndContext="#stay">
+                <DetectChar attribute="Definition" context="Package" char="-" column="0" />
+                <DetectChar attribute="Definition" context="#pop" char="#" firstNonSpace="true" lookAhead="true" />
                 <RegExpr attribute="Definition" context="#pop" String=".*[ \t]*:[ \t]*" column="0" lookAhead="true" />
             </context>
             <context name="Comment" attribute="Comment" lineEndContext="#pop">
@@ -34,6 +49,7 @@
             <itemData name="Comment" defStyleNum="dsComment" />
             <itemData name="Definition" defStyleNum="dsBuiltIn" />
             <itemData name="Title" defStyleNum="dsKeyword" />
+            <itemData name="Comparison" defStyleNum="dsKeyword" />
             <itemData name="Package" defStyleNum="dsOthers" />
             <itemData name="Value" defStyleNum="dsNormal" />
         </itemDatas>

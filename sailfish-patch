@@ -20,7 +20,7 @@
 #
 #
 
-DEPENDENCIES=(git sed scp ssh rpmbuild xclip tar)
+DEPENDENCIES=(git sed scp ssh rpmbuild xclip tar hxselect hxnormalize rpm2cpio cpio rpm)
 
 # check environment variables
 publish_via_ssh_possible=true
@@ -37,8 +37,8 @@ if [[ -z "$SF_PATCH_REMOTE_PATH" ]]; then
 fi
 
 dependencies() { # 1: echo/no-echo
-    ret=0
-    print=
+    local ret=0
+    local print=
     if [[ "$1" == "echo" ]]; then
         print=true
         echo -e "\nDependencies:"
@@ -80,7 +80,7 @@ if ! dependencies no-echo; then
 fi
 
 show_help() {
-script="$(basename "$0")"
+local script="$(basename "$0")"
     echo "\
 ** sailfish-patch **
 
@@ -94,14 +94,18 @@ Note: separate settings pages are currently only supported via Patchmanager.
 
 Usage:
     $script -c NAME
-    $script [-b] [-p] [-Po] [-Pm]
+    $script [-u] [-b] [-p] [-Po] [-Pm]
     $script -C FILE
     $script [-h] [-V]
 
 Arguments:
     -c, --create NAME           - create new patch skeleton in NAME
     -C, --check-config FILE     - validate config file FILE
+    -i, --import CONFIG TARBALL - setup a new working directory for the given patch
     -b, --build                 - build RPM and tarball
+    -u, --update                - update the working directory with the
+                                  latest sources (needs working ssh connection
+                                  for all sources except Openrepos)
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
@@ -123,6 +127,11 @@ check_config_name=
 create_new=false
 create_new_name=
 build=false
+update=false
+import=false
+import_config=
+import_tarball=
+import_command="$0"
 publish_via_ssh=false
 publish_to_openrepos=false
 publish_to_pm_catalogue=false
@@ -154,6 +163,34 @@ while [[ $# > 0 ]]; do
             fi
         ;;
         -b|--build) build=true;;
+        -u|--update) update=true;;
+        -i|--import)
+            import=true
+            shift
+
+            if [[ -z "$1" ]]; then
+                echo "error: no config file for the import given" >/dev/stderr
+                exit 1
+            elif [[ ! -f "$1" ]]; then
+                echo "error: config file to be imported not found" >/dev/stderr
+                exit 1
+            else
+                # save absolute path
+                import_config="$(readlink -m "$(dirname "$1")")/$(basename "$1")"
+            fi
+
+            shift
+            if [[ -z "$1" ]]; then
+                echo "error: no tarball for the import given" >/dev/stderr
+                exit 1
+            elif [[ ! -f "$1" ]]; then
+                echo "error: tarball to be imported not found" >/dev/stderr
+                exit 1
+            else
+                # save absolute path
+                import_tarball="$(readlink -m "$(dirname "$1")")/$(basename "$1")"
+            fi
+        ;;
         -p|--publish-ssh)
             if [[ "$publish_via_ssh_possible" == false ]]; then
                 echo "error: environment not set up correctly for publishing via ssh" >/dev/stderr
@@ -216,6 +253,7 @@ check_versions="1.1.9.30
 3.0.3.10"
 
 declare -A check_defaults=(
+[SourcePackages]="username:source-package-from-openrepos <= 1.0.10|source-package-from-official-repo"
 [Prefix]=""
 [DisplayName]="Pretty Name"
 [PackageName]="sfos-patch-category-name"
@@ -302,6 +340,13 @@ if [[ "$check_config" == true ]]; then
             value="$(trim "${value#-}")"
 
             # BEGIN value checks for multi line fields
+            __check_package_specification() { # 1: error name
+                if ! echo "$value" | grep -Pqe "^([^: ]+:|)[^: ]+( (<|>|=|<=|>=) .+|)$"; then
+                    echo "error: invalid $is_multiline package specification '$value' (line $count)" >/dev/stderr
+                    error=true
+                fi
+            }
+
             if [[ "$is_multiline" == "Screenshots" ]]; then
                 if [[ ! -f "$value" ]] && [[ ! -f "$(dirname "$check_config_name")/$value" ]]; then
                     echo "error: screenshot file '$value' not found (line $count)" >/dev/stderr
@@ -312,6 +357,12 @@ if [[ "$check_config" == true ]]; then
                     echo "error: invalid version '$value' (line $count)" >/dev/stderr
                     error=true
                 fi
+            elif [[    "$is_multiline" == "SourcePackages"
+                    || "$is_multiline" == "Requires"
+                    || "$is_multiline" == "Obsoletes"
+                    || "$is_multiline" == "Conflicts"
+            ]]; then
+                __check_package_specification
             fi
             # END value checks for multi line fields
 
@@ -430,7 +481,7 @@ if [[ "$check_config" == true ]]; then
         # multi line
         if [[ "$is_single" == false ]]; then
             case "$key" in
-                Screenshots|Changelog|Requires|Keywords|Conflicts|Obsoletes)
+                SourcePackages|Screenshots|Changelog|Requires|Keywords|Conflicts|Obsoletes)
                     # regular fields
                     is_multiline="$key"
                     is_multiline_at="$count"
@@ -487,15 +538,15 @@ get_single_config() { # 1: config file, 2: key, 3: default value
     # we can safely assume the file exists and is valid
     # which means we can also assume the key exists if it is required
 
-    line="$(grep "^$2:" "$1" | head -1)"
+    local line="$(grep "^$2:" "$1" | head -1)"
 
     if [[ -z "$line" ]]; then
         echo "$3"
         return
     fi
 
-    key="${line%%:*}"
-    value="$(trim "${line#$key:}")"
+    local key="${line%%:*}"
+    local value="$(trim "${line#$key:}")"
 
     if [[ -z "$value" ]]; then
         echo -n "$3"
@@ -508,12 +559,13 @@ get_multi_config() { # 1: config file, 2: key, 3: default value
     # we can safely assume the file exists and is valid
     # which means we can also assume the key exists if it is required
 
-    key_at="$(grep -nr "^$2:" "$1" | cut -d':' -f1)"
+    local key_at="$(grep -nr "^$2:" "$1" | cut -d':' -f1)"
+    local lines=()
     readarray -t lines <<<"$(tail --lines=+"$((key_at+1))" "$1")"
-    selected=()
+    local selected=()
 
     for l in "${lines[@]}"; do
-        first="${l:0:1}"
+        local first="${l:0:1}"
 
         case "$first" in
             -) selected+=("$(trim "${l:1}")");;
@@ -609,6 +661,21 @@ __get_package_path() { # 1: type (rpm/tarball)
     echo -n "$package"
 }
 
+# return default original files path
+__get_original_path() {
+    echo -n "$(pwd)/original"
+}
+
+# return default patched files path
+__get_patched_path() {
+    echo -n "$(pwd)/patched"
+}
+
+# return default source package path
+__get_sources_path() {
+    echo -n "$(pwd)/source-packages"
+}
+
 require_build_config() {
     # require build dir
     local build_dir="$(__get_build_path)"
@@ -630,7 +697,7 @@ require_current_package() { # 1: type (rpm/tarball)
     local build_dir="$(__get_build_path)"
 
     # find package file
-    package="$(__get_package_path "$1")"
+    local package="$(__get_package_path "$1")"
 
     if [[ -z "$package" ]]; then
         echo "error: no $1 found" >/dev/stderr
@@ -638,6 +705,23 @@ require_current_package() { # 1: type (rpm/tarball)
     fi
 
     return 0
+}
+
+# create diff and save it to $2
+# assumes config is valid
+__create_diff() { # 1: config, 2: save path
+    local prefix="$(get_single_config "$1" "Prefix" "/")"
+
+    if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
+        prefix="$prefix/"
+    fi
+
+    local original="$(__get_original_path)"
+    local patched="$(__get_patched_path)"
+
+    git diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" |\
+        sed -Ee "s@(--git|---|\+\+\+) (a|b)${prefix}(${original#/}|${patched#/})/@\1 \2${prefix}@g;
+                    s@(--git a/.*) b${prefix}${patched#/}/@\1 b${prefix}@g" > "$2"
 }
 
 
@@ -656,9 +740,10 @@ if [[ "$create_new" == true ]]; then
     git checkout -b master
 
     mkdir -p extra
-    mkdir -p original
-    mkdir -p patched
-    mkdir -p build
+    mkdir -p "$(__get_original_path)"
+    mkdir -p "$(__get_patched_path)"
+    mkdir -p "$(__get_sources_path)"
+    mkdir -p "$(__get_build_path)"
 
     cp "$config_file" CONFIG
     cp "$license_file" COPYING
@@ -669,8 +754,6 @@ if [[ "$create_new" == true ]]; then
 
     echo "patch created: $create_new_name"
 
-
-
     cat <<EOF
 == SailfishOS Patch: $create_new_name ==
 
@@ -678,18 +761,395 @@ The patch has been prepared. The next step is to edit the
 configuration file (CONFIG). Then copy all original files into the two
 directories 'original' and 'patched'. Make your changes in the latter.
 
+You can add all packages the patch is based on in the 'SourcePackages' field
+in the configuration file. Running 'sailfish-patch -u' will update all source
+files and makes it easy to adapt the patch to new upstream versions.
+
+Note that it must be possible for sailfish-patch to connect to your device via
+SSH if you want to use source packages from the official repos. Make sure this
+is configured correctly. (This is not needed for Openrepos sources.)
+
 If you want to add your own settings pages or include translation files,
 icons etc. in your patch, you can place them in the 'extra' directory. Note
 that this is not yet supported for RPMs.
-
 EOF
-
 
     exit 0
 else
+    __update_is_valid_version() { # 1: comparison (>, <, >=, <=, =); 2,3: versions to compare
+        local comparison="$1"
+        local check_1="$2"
+        local check_2="$3"
+
+        get_largest() {
+            printf '%s\n' "$@" | sort --version-sort | head -1
+        }
+
+        get_smallest() {
+            printf '%s\n' "$@" | sort --version-sort | tail -1
+        }
+
+        ok=false
+        case "$comparison" in
+            ">") if [[ "$(get_largest "$check_1" "$check_2")" != "$check_1" ]]; then
+                    ok=true
+                fi
+            ;;
+            ">=") if [[ "$check_1" == "$check_2" || "$(get_largest "$check_1" "$check_2")" != "$check_1" ]]; then
+                    ok=true
+                fi
+            ;;
+            "<") if [[ "$(get_smallest "$check_1" "$check_2")" != "$check_1" ]]; then
+                    ok=true
+                fi
+            ;;
+            "<=") if [[ "$check_1" == "$check_2" || "$(get_smallest "$check_1" "$check_2")" != "$check_1" ]]; then
+                    ok=true
+                fi
+            ;;
+            "=") if [[ "$check_1" == "$check_2" ]]; then
+                    ok=true
+                fi
+            ;;
+        esac
+
+        if [[ "$ok" == false ]]; then
+            return 1
+        else
+            return 0
+        fi
+    }
+
+    # we assume config has been checked before and is valid
+    __update_fetch_latest_sources() {
+        local original="$(__get_original_path)"
+        local config="$(__get_config_path)"
+        local packages="$(__get_sources_path)"
+        local extract="${packages%/}/extract"
+        local base="$(pwd)"
+        local -r openrepos_url="https://sailfish.openrepos.net/"
+
+        if ! rm -rf "$original"; then
+            echo "error: failed to remove old original sources" >/dev/stderr
+            return 1
+        fi
+
+        if [[ -d "$packages" ]]; then
+            rm -rf "$packages" || return 1
+        fi
+
+        if [[ -d "$extract" ]]; then
+            rm -rf "$extract" || return 1
+        fi
+
+        if ! mkdir -p "$extract"; then
+            echo "error: failed to prepare temporary files" >/dev/stderr
+            return 1
+        fi
+
+        if ! mkdir -p "$packages"; then
+            echo "error: failed to prepare temporary files" >/dev/stderr
+            return 1
+        fi
+
+        local sources=()
+        readarray -t sources <<<"$(get_multi_config "$config" "SourcePackages")"
+
+        if (( ${#sources[@]} == 0 )); then
+            # nothing to fetch
+            return 0
+        fi
+
+        for s in "${sources[@]}"; do
+            local source="$(trim "${s%% *}")"
+            local version=
+            local version_action=
+            local file="$packages/${source}.rpm"
+
+            if echo "$s" | grep -Pqoe " ([><]=?|=) "; then
+                version_action="$(echo "$s" | grep -Poe "([><]=?|=)")"
+                version="${s##* }"
+            fi
+
+            if [[ "$source" == *":"* ]]; then
+                # assume openrepos
+                local user="${source%%:*}"
+                local source="${source#*:}"
+                file="$packages/${source}.rpm"
+
+                if [[ -z "$user" ]]; then
+                    echo "error: failed to determine Openrepos user for '$source'" >/dev/stderr
+                    return 1
+                fi
+
+                local repo_url="${openrepos_url%/}/${user}/personal/main/${source:0:1}/"
+                if ! local html="$(curl "$repo_url")"; then
+                    echo "error: failed to download Openrepos repository for '$source'" >/dev/stderr
+                    return 1
+                fi
+
+                set -o pipefail
+                local repo="$(echo "$html" | hxnormalize -x -e | hxselect html body a -s "\n" |\
+                    sed -E 's/^<a href=".*?\.rpm">//g;s#</a>##g' |\
+                    grep "armv7hl" |\
+                    sort --version-sort -u)"
+
+                if (( $? != 0 )); then
+                    echo "error: failed to extract Openrepos repository listing for '$source'" >/dev/stderr
+                    return 1
+                fi
+
+                local rpm="$(echo "$repo" | grep "$source" | tail -1)"
+
+                if (( $? != 0 )); then
+                    echo "error: failed to extract Openrepos package url for '$source'" >/dev/stderr
+                    return 1
+                fi
+                set +o pipefail
+
+                cd "$packages"
+                if ! curl "${repo_url%/}/$rpm" -o "${source}.rpm"; then
+                    echo "error: failed to download package '$source'" >/dev/stderr
+                    cd "$base"
+                    return 1
+                fi
+                cd "$base"
+            else
+                # assume Jolla store
+                if [[ -z "$SF_PATCH_SSH_TARGET" ]]; then
+                    echo "error: ssh target not set" >/dev/stderr
+                    echo "       cannot fetch packages from official repos without ssh access to the device" >/dev/stderr
+                    return 1
+                fi
+
+                remote_temp_dir="/tmp/sailfish-patch.tmp"
+                ssh "$SF_PATCH_SSH_TARGET" "rm -rf '$remote_temp_dir';\
+                                            mkdir -p '$remote_temp_dir' &&\
+                                            pkcon download '$remote_temp_dir' '$source'"
+
+                if (( $? != 0 )); then
+                    echo "error: failed to download package '$source' from official repos via ssh" >/dev/stderr
+                    return 1
+                fi
+
+                scp nemo@"$SF_PATCH_SSH_TARGET":"$remote_temp_dir/${source}*" "$file"
+
+                if (( $? != 0 )); then
+                    echo "error: failed transfer downloaded package '$source' from the device" >/dev/stderr
+                    return 1
+                fi
+            fi
+
+            if [[ -n "$version" && -n "$version_action" ]]; then
+                if ! __update_is_valid_version "$version_action" "$(rpm -qp --queryformat '%{VERSION}' "$file" 2>/dev/null)" "$version"; then
+                    echo "error: could not fetch appropriate version of '$source' ($version$version_action$(rpm -qp --queryformat '%{VERSION}' "$file"))" >/dev/stderr
+                    return 1
+                fi
+            fi
+
+            cd "$extract"
+
+            if ! rpm2cpio "$file" | cpio -idmv; then
+                echo "error: failed to extract '$file'" >/dev/stderr
+                cd "$base"
+                return 1
+            fi
+            cd "$base"
+        done
+
+        cd "$extract"
+
+        prefix="$(get_single_config "$config" "Prefix" "/")"
+
+        if [[ ! -d ".$prefix" ]]; then
+            echo "error: invalid prefix $prefix" >/dev/stderr
+            cd "$base"
+            return 1
+        fi
+
+        cd ".$prefix"
+        shopt -s nullglob dotglob
+        mkdir -p "$original"
+        mv -t "$original" * || return 1
+        shopt -u nullglob dotglob
+
+        cd "$base"
+        return 0
+    }
+
+    __update_copy_sources() {
+        local original="$(__get_original_path)"
+        local patched="$(__get_patched_path)"
+
+        if ! rm -rf "$patched"; then
+            echo "error: failed to remove old patched sources" >/dev/stderr
+            return 1
+        fi
+
+        if [[ ! -d "$original" ]]; then
+            echo "error: failed to copy sources - files not found" >/dev/stderr
+            return 1
+        fi
+
+        cp -r "$original" "$patched" || return 1
+        return 0
+    }
+
+    # we assume config has been checked before and is valid
+    __update_apply_diff() { # 1: diff file
+        local original="$(__get_original_path)"
+        local patched="$(__get_patched_path)"
+        local prefix="$(get_single_config "$(__get_config_path)" "Prefix" "/")"
+        local tmp_diff="$(mktemp -p . update_diff_XXXX.patch)"
+
+        if ! cp -r "$original" "$original.tmp"; then
+            echo "error: failed to create temporary copy of pre-patched original files" >/dev/stderr
+            return 1
+        fi
+
+        if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
+            prefix="$prefix/"
+        fi
+
+        sed "$1" -Ee "s@(--git|---|\+\+\+) a${prefix}@\1 a${original}/@g;
+                   s@(--git|---|\+\+\+) b${prefix}@\1 b${patched}/@g;
+                   s@(--git a/.*) b${prefix}@\1 b${patched}/@g" > "$tmp_diff" || return 1
+
+        strip="$(pwd)"
+        strip="${strip%/}/"
+        strip="$(echo "$strip" | grep -oe "/" | wc -l)"
+
+        if ! git apply --reject --binary -p "$strip" -v "$tmp_diff"; then
+            echo "error: failed to apply diff" >/dev/stderr
+            return 1
+        fi
+
+        if [[ ! -d "$original.tmp" ]]; then
+            echo "error: could not find temporary copy of original files" >/dev/stderr
+            return 1
+        fi
+
+        if ! rm -rf "$original"; then
+            echo "error: failed to remove stale original sources" >/dev/stderr
+            return 1
+        fi
+
+        mv "$original.tmp" "$original"
+        rm "$tmp_diff"
+    }
+
+    if [[ "$import" == true ]]; then
+        if git rev-parse --git-dir 2>/dev/null; then
+            echo "error: already inside a Git repository;" >/dev/stderr
+            echo "       sailfish-patch heavily relies on having only one" >/dev/stderr
+            echo "       patch per repo" >/dev/stderr
+            exit 1
+        fi
+
+        require_config "$import_config" || exit 1
+
+        package="$(get_single_config "$import_config" "PackageName")"
+        "$import_command" --create "$package" || exit 1
+
+        cd "$package"
+        cp "$import_config" "$(__get_config_path)"
+
+        __update_fetch_latest_sources || exit 1
+        __update_copy_sources || exit 1
+
+        # extract tarball
+        base="$(pwd)"
+        extract_dir="$(mktemp -d tmp.XXXX -p .)"
+        cd "$extract_dir"
+        tar -xzvf "$import_tarball"
+
+        if [[ ! -f "unified_diff.patch" ]]; then
+            echo "error: could not find diff file in tarball" >/dev/stderr
+            exit 1
+        fi
+
+        cd "$base"
+
+        __update_apply_diff "$extract_dir/unified_diff.patch" || exit 1
+
+        rm -rf "$extract_dir"
+
+        git add "$(__get_config_path)" "$(__get_original_path)" "$(__get_patched_path)" &&\
+            git commit -m "patch automatically imported by sailfish-patch"
+    fi
+
+    if [[ "$update" == true ]]; then
+        original="$(__get_original_path)"
+        patched="$(__get_patched_path)"
+
+        if [[ -n "$(git status --porcelain)" ]]; then
+            echo "error: there are uncommitted changes" >/dev/stderr
+            exit 1
+        fi
+
+        require_config "$(__get_config_path)" || exit 1
+
+        readarray -t sources <<<"$(get_multi_config "$(__get_config_path)" "SourcePackages")"
+
+        if (( ${#sources[@]} == 0 )); then
+            if [[ -d "$original" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
+                echo "warning: no source packages specified but original source files found"
+            else
+                mkdir -p "$original"
+            fi
+
+            echo "no source packages specified: automatic update is not possible"
+        else
+            if [[ ! -d "$original" || ! -d "$patched" ]]; then
+                echo "error: make sure the following directories exists:" >/dev/stderr
+                echo "- $original" >/dev/stderr
+                echo "- $patched" >/dev/stderr
+                exit 1
+            fi
+
+            have_original=true
+            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
+                echo "warning: there are no original files"
+                have_original=false
+            fi
+
+            have_patched=true
+            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$patched"/* )" ]]; then
+                echo "warning: there are no patched files"
+                have_patched=false
+            fi
+
+            original_updated=false
+            if [[ "$have_original" == false ]]; then
+                __update_fetch_latest_sources || exit 1
+                original_updated=true
+            fi
+
+            patched_updated=false
+            if [[ "$have_patched" == false ]]; then
+                __update_copy_sources || exit 1
+                patched_updated=true
+            fi
+
+            diff_out="$(mktemp -p . original_diff_XXXX.patch)"
+            __create_diff "$(__get_config_path)" "$diff_out"
+
+            if [[ "$original_updated" == false ]]; then
+                __update_fetch_latest_sources || exit 1
+            fi
+
+            if [[ "$patched_updated" == false ]]; then
+                __update_copy_sources || exit 1
+            fi
+
+            __update_apply_diff "$diff_out" || exit 1
+            rm "$diff_out"
+        fi
+    fi
+
     if [[ "$build" == true ]]; then
-        original="$(pwd)/original"
-        patched="$(pwd)/patched"
+        original="$(__get_original_path)"
+        patched="$(__get_patched_path)"
 
         # require original files
         if [[ ! -d "$original" ]]; then
@@ -717,15 +1177,7 @@ else
         temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
 
         # create diff
-        prefix="$(get_single_config "$config" "Prefix" "/")"
-
-        if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
-            prefix="$prefix/"
-        fi
-
-        git diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- original patched |\
-            sed -Ee "s@(--git|---|\+\+\+) (a|b)${prefix}(original|patched)/@\1 \2${prefix}@g;
-                     s@(--git a/.*) b${prefix}patched/@\1 b${prefix}@g" > "${temp_build_dir}/unified_diff.patch"
+        __create_diff "$config" "${temp_build_dir}/unified_diff.patch"
         cd "$temp_build_dir"
 
         # copy extra files

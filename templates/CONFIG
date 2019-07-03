@@ -12,6 +12,10 @@
 #   (each line in a multiline field must start with '- ')
 #
 
+SourcePackages:
+- username:source-package-from-openrepos <= 1.0.10
+- source-package-from-official-repo
+
 Prefix: /usr/share
 DisplayName: Pretty Name
 PackageName: sfos-patch-category-name
