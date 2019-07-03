@@ -87,7 +87,7 @@ script="$(basename "$0")"
 Manage your SailfishOS patches.
 
 Create a new patch skeleton with '-c NAME' and put the original files
-in the new Git branch 'original'. Copy everything to the branch 'master' and
+in the directory 'original'. Copy everything to the directory 'patched' and
 make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 
 Note: separate settings pages are currently only supported via Patchmanager.
@@ -653,23 +653,30 @@ if [[ "$create_new" == true ]]; then
     cd "$create_new_name"
 
     git init
-    git checkout -b original
+    git checkout -b master
 
-    cat <<EOF > "README"
-SailfishOS Patch
-================
+    mkdir -p extra
+    mkdir -p original
+    mkdir -p patched
+    mkdir -p build
 
-Place your original files in the branch 'original' and commit them.
+    cp "$config_file" CONFIG
+    cp "$license_file" COPYING
+    cp "$gitignore_file" .gitignore
 
-Make sure there are ONLY the original files that you want to base the diff
-on are in this branch!
+    git add CONFIG COPYING .gitignore
+    git commit -m "patch skeleton automatically created by sailfish-patch"
 
-Then, change to the branch 'master' and make your changes. The diff will
-include all differences between the two branches 'original' and 'master'
-EXCEPT for the two directories 'build' and 'extra'.
+    echo "patch created: $create_new_name"
 
-Below 'build' you will find a sample configuration file named CONFIG which
-you have to adapt to configure your patch. (It is documented in-place.)
+
+
+    cat <<EOF
+== SailfishOS Patch: $create_new_name ==
+
+The patch has been prepared. The next step is to edit the
+configuration file (CONFIG). Then copy all original files into the two
+directories 'original' and 'patched'. Make your changes in the latter.
 
 If you want to add your own settings pages or include translation files,
 icons etc. in your patch, you can place them in the 'extra' directory. Note
@@ -677,39 +684,24 @@ that this is not yet supported for RPMs.
 
 EOF
 
-    git add README
-    git commit -m "patch skeleton automatically created by sailfish-patch"
 
-    git checkout -b master
-
-    mkdir -p extra
-    mkdir -p build
-    cd build
-
-    cp "$config_file" CONFIG
-    cp "$license_file" COPYING
-    cp "$gitignore_file" .gitignore
-
-    git add CONFIG COPYING .gitignore
-    git commit -m "build templates automatically imported by sailfish-patch"
-
-    echo "patch created: $create_new_name"
     exit 0
 else
     if [[ "$build" == true ]]; then
-        # require git root
-        if [[ ! -d .git ]]; then
-            echo "error: not in the root directory of a Git repository" >/dev/stderr
-            exit 2
+        original="$(pwd)/original"
+        patched="$(pwd)/patched"
+
+        # require original files
+        if [[ ! -d "$original" ]]; then
+            echo "error: missing original files directory" >/dev/stderr
+            echo "note:  even if the patch only adds files, the 'original'" >/dev/stderr
+            echo "       directory has to be present" >/dev/stderr
+            exit 1
         fi
 
-        orig_branch="$(git branch --list | grep -E '^\s*original$')"
-
-        if [[ -z "$orig_branch" ]]; then
-            echo "error: missing 'original' branch" >/dev/stderr
-            echo "       Create this branch and commit the original QML files without any changes." >/dev/stderr
-            echo "       The diff is created based on this branch." >/dev/stderr
-            exit 2
+        if [[ ! -d "$patched" ]]; then
+            echo "error: missing patched files directory" >/dev/stderr
+            exit 1
         fi
 
         # require valid config and build directory
@@ -725,13 +717,15 @@ else
         temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
 
         # create diff
-        prefix_dir="$(get_single_config "$config" "Prefix" "/")"
+        prefix="$(get_single_config "$config" "Prefix" "/")"
 
-        if [[ "$prefix_dir" != "/" && "$prefix_dir" != *"/" ]]; then
-            prefix_dir="$prefix_dir/"
+        if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
+            prefix="$prefix/"
         fi
 
-        git diff original --src-prefix="a$prefix_dir" --dst-prefix="b$prefix_dir" -- . ':(exclude)build/*' > "$temp_build_dir/unified_diff.patch"
+        git diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- original patched |\
+            sed -Ee "s@(--git|---|\+\+\+) (a|b)${prefix}(original|patched)/@\1 \2${prefix}@g;
+                     s@(--git a/.*) b${prefix}patched/@\1 b${prefix}@g" > "${temp_build_dir}/unified_diff.patch"
         cd "$temp_build_dir"
 
         # copy extra files
