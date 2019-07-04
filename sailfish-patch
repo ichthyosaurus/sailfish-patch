@@ -20,7 +20,7 @@
 #
 #
 
-DEPENDENCIES=(git sed scp ssh rpmbuild xclip tar hxselect hxnormalize rpm2cpio cpio rpm)
+DEPENDENCIES=(git sed scp ssh rpmbuild xclip tar hxselect hxnormalize rpm2cpio cpio rpm patch)
 
 # check environment variables
 publish_via_ssh_possible=true
@@ -110,8 +110,13 @@ Arguments:
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
+
     -V, --version               - show version and license information
     -h, --help                  - show this help and exit
+
+Debug Options:
+    -g, --use-git-apply         - use git-apply(1) instead of patch(1) for applying
+                                  the patch (see -i and -u)
 
 Environment:
     - path to a local file containing your devel-su passphrase
@@ -137,6 +142,7 @@ publish_via_ssh=false
 publish_to_openrepos=false
 publish_to_pm_catalogue=false
 force=false
+patch_utility=patch
 
 while [[ $# > 0 ]]; do
     case "$1" in
@@ -204,6 +210,7 @@ while [[ $# > 0 ]]; do
         ;;
         -Po|--publish-openrepos) publish_to_openrepos=true;;
         -Pm|--publish-patchmanager) publish_to_pm_catalogue=true;;
+        -g|--use-git-apply) patch_utility=git;;
         -*) echo "unknown option: $1";;
         *) shift; continue;;
     esac
@@ -1023,8 +1030,18 @@ else
         strip="${strip%/}/"
         strip="$(echo "$strip" | grep -oe "/" | wc -l)"
 
-        if ! git apply --reject --binary -p "$strip" -v "$tmp_diff"; then
-            echo "error: failed to apply diff" >/dev/stderr
+        if [[ "$patch_utility" == "git" ]]; then
+            if ! git apply --reject --binary -p "$strip" -v "$tmp_diff"; then
+                echo "error: failed to apply diff" >/dev/stderr
+                return 1
+            fi
+        elif [[ "$patch_utility" == "patch" ]]; then
+            if ! patch -p"$strip" -u <"$tmp_diff"; then
+                echo "error: failed to apply diff" >/dev/stderr
+                return 1
+            fi
+        else
+            echo "internal error: unknown patch utility '$patch_utility'" >/dev/stderr
             return 1
         fi
 
