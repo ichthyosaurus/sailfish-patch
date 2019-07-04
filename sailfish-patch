@@ -672,6 +672,11 @@ __get_sources_path() {
     echo -n "$(pwd)/source-packages"
 }
 
+# return default extras path
+__get_extra_path() {
+    echo -n "$(pwd)/extra"
+}
+
 require_build_config() {
     # require build dir
     local build_dir="$(__get_build_path)"
@@ -735,7 +740,7 @@ if [[ "$create_new" == true ]]; then
     git init
     git checkout -b master
 
-    mkdir -p extra
+    mkdir -p "$(__get_extra_path)"
     mkdir -p "$(__get_original_path)"
     mkdir -p "$(__get_patched_path)"
     mkdir -p "$(__get_sources_path)"
@@ -755,7 +760,7 @@ if [[ "$create_new" == true ]]; then
 
 The patch has been prepared. The next step is to edit the
 configuration file (CONFIG). Then copy all original files into the two
-directories 'original' and 'patched'. Make your changes in the latter.
+directories '$(basename "$(__get_original_path)")' and '$(basename "$(__get_patched_path)")'. Make your changes in the latter.
 
 You can add all packages the patch is based on in the 'SourcePackages' field
 in the configuration file. Running 'sailfish-patch -u' will update all source
@@ -766,7 +771,7 @@ SSH if you want to use source packages from the official repos. Make sure this
 is configured correctly. (This is not needed for Openrepos sources.)
 
 If you want to add your own settings pages or include translation files,
-icons etc. in your patch, you can place them in the 'extra' directory. Note
+icons etc. in your patch, you can place them in the '$(basename "$(__get_extra_path)")' directory. Note
 that this is not yet supported for RPMs.
 EOF
 
@@ -1165,6 +1170,7 @@ else
         base="$(pwd)"
         config="$(__get_config_path)"
         build_dir="$(__get_build_path)"
+        extra_dir="$(__get_extra_path)"
 
         # require templates
         require_templates || exit 1
@@ -1177,9 +1183,8 @@ else
         cd "$temp_build_dir"
 
         # copy extra files
-        extra_dir="$base/extra"
         if [[ -d "$extra_dir" ]]; then
-            mkdir extra
+            mkdir -p "$extra_dir"
             find "$extra_dir" -type f -iregex ".*\.\(qml|js|png|svg|qm\)" -exec cp {} "$temp_build_dir/extra" \;
         fi
 
@@ -1187,14 +1192,14 @@ else
         rpm_build_dir="$temp_build_dir/rpm_build"
         cp "$spec_file" rpm.spec
         mkdir -p "$rpm_build_dir"
-        [[ -d extra ]] && cp extra/* "$rpm_build_dir"
+        [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]] && cp extra/* "$rpm_build_dir"
         cp unified_diff.patch "$rpm_build_dir/unified_diff.patch"
         cp "$json_file" "$rpm_build_dir/patch.json"
 
         tarball_build_dir="$temp_build_dir/tarball_build"
         mkdir -p "$tarball_build_dir"
         mv unified_diff.patch "$tarball_build_dir/unified_diff.patch"
-        [[ -d extra ]] && mv extra/* "$tarball_build_dir"
+        [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]] && mv extra/* "$tarball_build_dir"
 
         rpm_version="$(get_single_config "$config" "Version")"
         release="$(get_single_config "$config" "Release")"
