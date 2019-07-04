@@ -13,12 +13,34 @@ sailfish-patch - Manage your SailfishOS patches
 
 ## DESCRIPTION
 
-Create a new patch skeleton with '-c NAME' and put the original files
-in the new Git branch 'original'. Copy everything to the branch 'master' and
-make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
+Create a new patch skeleton with `-c NAME` and put the original files
+in the directory `original`. Copy everything to the directory `patched` and
+make your changes. Configure the project in `build/CONFIG`. Build with `-b`.
 
 Note: separate settings pages are currently only supported via Patchmanager.
 
+You can add all packages a patch is based on in the `SourcePackages` field
+in the configuration file. Running `sailfish-patch -u` will update all source
+files and makes it easy to adapt the patch to new upstream versions.
+
+Note that it must be possible for `sailfish-patch` to connect to your device via
+SSH if you want to use source packages from the official repos. Make sure this
+is configured correctly. (This is not needed for OpenRepos sources.)
+
+If you want to add your own settings pages or include translation files,
+icons etc. in your patch, you can place them in the `extra` directory. Note
+that this is not yet supported for RPMs.
+
+Tips:
+
+- Use `rpm -qf /path/to/file` to find out which package a file belongs to.
+- Use `pkcon get-details packagename` to check which version is installed.
+- Use `sailfish-patch -b -p` to test the patch directly after building (needs ssh).
+- Do not push your patch to a public repository. Instead, publish the `code
+  distribution package` which includes only the files that belong to you.
+  Other users can rebuild the development environment by running
+  `sailfish-patch -u` in the published directory. This way, you do not have to
+  publish potentially copyrighted material without permission.
 
 ## OPTIONS
 
@@ -112,13 +134,19 @@ or grab the source from <https://github.com/sunaku/md2man>.
 `sailfish-patch` internally depends on the following external programs, scripts, and/or
 libraries. Make sure they are all installed and setup correctly.
 
-* git
-* sed
-* scp
-* ssh
-* rpmbuild
-* xclip
-* tar
+- patch
+- git
+- scp
+- ssh
+- sed
+- rpm
+- rpmbuild
+- rpm2cpio
+- cpio
+- tar
+- xclip
+- hxselect
+- hxnormalize
 
 ## AUTHOR
 Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman.

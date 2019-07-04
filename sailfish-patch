@@ -20,7 +20,11 @@
 #
 #
 
-DEPENDENCIES=(git sed scp ssh rpmbuild xclip tar hxselect hxnormalize rpm2cpio cpio rpm patch)
+DEPENDENCIES=(
+    patch git scp ssh sed xclip
+    rpm rpmbuild rpm2cpio cpio tar
+    hxselect hxnormalize
+)
 
 # check environment variables
 publish_via_ssh_possible=true
