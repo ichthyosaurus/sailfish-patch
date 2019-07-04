@@ -97,8 +97,10 @@ make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 Note: separate settings pages are currently only supported via Patchmanager.
 
 Usage:
+    $script [-b] [-p] [-Po] [-Pm]
     $script -c NAME
-    $script [-u] [-b] [-p] [-Po] [-Pm]
+    $script -u
+    $script -i CONFIG TARBALL
     $script -C FILE
     $script [-h] [-V]
 

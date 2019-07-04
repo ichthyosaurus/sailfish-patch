@@ -5,11 +5,17 @@
 sailfish-patch - Manage your SailfishOS patches
 
 ## SYNOPSIS
-`sailfish-patch` [-c NAME]
 `sailfish-patch` [-b] [-p] [-Po] [-Pm]
-`sailfish-patch` [-C FILE]
-`sailfish-patch` [-h] [-V]
 
+`sailfish-patch` [-c NAME]
+
+`sailfish-patch` [-u]
+
+`sailfish-patch` [-i CONFIG TARBALL]
+
+`sailfish-patch` [-C FILE]
+
+`sailfish-patch` [-h] [-V]
 
 ## DESCRIPTION
 
@@ -77,7 +83,7 @@ Read the sample configuration file provided with this script for detailed docume
 To enable syntax highlighting in KDE's text editor Kate put the syntax highlighting
 definition file provided with this script in the following directory:
 
-  $HOME/.local/share/org.kde.syntax-highlighting/syntax/
+    $HOME/.local/share/org.kde.syntax-highlighting/syntax/
 
 ## ENVIRONMENT
 
@@ -117,7 +123,7 @@ To install the manual page, you have to compile it from the Markdown source.
 For this, `md2man` can be used, or any other tool at your liking. Then copy
 the generated manual page to your local manual directory. Usually something
 like the below should do the job:
-9
+
     md2man-roff README.md | gzip -c - > "sailfish-patch.1.gz"
     sudo cp "sailfish-patch.1.gz" "/usr/local/man/man1/sailfish-patch.1.gz"
 
