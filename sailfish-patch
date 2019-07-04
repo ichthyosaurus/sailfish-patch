@@ -1182,10 +1182,26 @@ else
         __create_diff "$config" "${temp_build_dir}/unified_diff.patch"
         cd "$temp_build_dir"
 
-        # copy extra files
+        # import extra files
         if [[ -d "$extra_dir" ]]; then
-            mkdir -p "$extra_dir"
-            find "$extra_dir" -type f -iregex ".*\.\(qml|js|png|svg|qm\)" -exec cp {} "$temp_build_dir/extra" \;
+            if (( $(find "$extra_dir" -mindepth 1 -type d | wc -l) > 0 )); then
+                echo "warning: subdirectories are not allowed for extra files"
+                echo "         all files will be copied in the same directory"
+            fi
+
+            if find extra -type f | grep -Pq --invert-match -e ".*\.(qml|js|png|svg|qm)"; then
+                echo "warning: unsupported extra files found"
+                echo "         only files with the following extensions are allowed:"
+                echo "            .qml, .js, .png, .svg, .qm"
+                echo "         all other files will be ignored!"
+            fi
+
+            if (( $(find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)" | wc -l) > 0 )); then
+                mkdir -p "$temp_build_dir/extra"
+                find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)" -exec cp {} "$temp_build_dir/extra" \;
+            else
+                echo "warning: directory for extra files found but there are no usable files"
+            fi
         fi
 
         # copy and configure templates
