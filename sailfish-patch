@@ -1204,18 +1204,23 @@ else
             fi
         fi
 
-        # copy and configure templates
+        # prepare files and templates
         rpm_build_dir="$temp_build_dir/rpm_build"
+        tarball_build_dir="$temp_build_dir/tarball_build"
+        dist_build_dir="$temp_build_dir/dist_build"
+
+        mkdir -p "$rpm_build_dir" "$tarball_build_dir" "$dist_build_dir"
+
         cp "$spec_file" rpm.spec
-        mkdir -p "$rpm_build_dir"
-        [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]] && cp extra/* "$rpm_build_dir"
-        cp unified_diff.patch "$rpm_build_dir/unified_diff.patch"
         cp "$json_file" "$rpm_build_dir/patch.json"
 
-        tarball_build_dir="$temp_build_dir/tarball_build"
-        mkdir -p "$tarball_build_dir"
+        if [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]]; then
+            cp extra/* "$rpm_build_dir"
+            mv extra/* "$tarball_build_dir"
+        fi
+
+        cp unified_diff.patch "$rpm_build_dir/unified_diff.patch"
         mv unified_diff.patch "$tarball_build_dir/unified_diff.patch"
-        [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]] && mv extra/* "$tarball_build_dir"
 
         rpm_version="$(get_single_config "$config" "Version")"
         release="$(get_single_config "$config" "Release")"
@@ -1232,22 +1237,26 @@ else
             sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/patch.json"
         done
 
+        # configure json-specific fields
         description="$(get_multi_config "$config" "Description")"
         description="${description//\"/\\\\\"}" # escape quotes
         description="${description//&/\\\\&}" # escape ampersand
         awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
             "$rpm_build_dir/patch.json" > _tmp && mv _tmp "$rpm_build_dir/patch.json"
 
+        # configure rpm-specific fields
         for i in Requires Obsoletes Conflicts; do
             values="$(get_multi_config "$config" "$i")"
+
             if [[ -n "$values" ]]; then
                 readarray -t m_lines <<<"$(echo "$values")"
+
                 for l in "${m_lines[@]}"; do
                     l="${l//\//\\/}" # escape slashes
-                    sed -i "/@${i^^}@/i\
-$i: $l" rpm.spec
+                    sed -i "$(echo -en "/@${i^^}@/i\\\\\n$i: $l")" rpm.spec
                 done
             fi
+
             sed -i "s/@${i^^}@//g" rpm.spec
         done
 
@@ -1275,6 +1284,7 @@ $i: $l" rpm.spec
             mv --backup=t "$tarball" "$build_dir"
         fi
 
+        # clean up
         rm -r "$temp_build_dir"
         cd "$base"
     fi
