@@ -1189,7 +1189,7 @@ else
                 echo "         all files will be copied in the same directory"
             fi
 
-            if find extra -type f | grep -Pq --invert-match -e ".*\.(qml|js|png|svg|qm)"; then
+            if find "$extra_dir" -type f | grep -Pq --invert-match -e ".*\.(qml|js|png|svg|qm)"; then
                 echo "warning: unsupported extra files found"
                 echo "         only files with the following extensions are allowed:"
                 echo "            .qml, .js, .png, .svg, .qm"
