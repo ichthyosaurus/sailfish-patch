@@ -106,6 +106,7 @@ Arguments:
     -u, --update                - update the working directory with the
                                   latest sources (needs working ssh connection
                                   for all sources except OpenRepos)
+    -f, --force                 - skip some safety checks
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
@@ -135,6 +136,7 @@ import_command="$0"
 publish_via_ssh=false
 publish_to_openrepos=false
 publish_to_pm_catalogue=false
+force=false
 
 while [[ $# > 0 ]]; do
     case "$1" in
@@ -151,6 +153,7 @@ while [[ $# > 0 ]]; do
                 check_config_name="$1"
             fi
         ;;
+        -f|--force) force=true;;
         -c|--create)
             create_new=true
             shift
@@ -1084,8 +1087,12 @@ else
         patched="$(__get_patched_path)"
 
         if [[ -n "$(git status --porcelain)" ]]; then
-            echo "error: there are uncommitted changes" >/dev/stderr
-            exit 1
+            if [[ "$force" == true ]]; then
+                echo "warning: there are uncommitted changes"
+            else
+                echo "error: there are uncommitted changes" >/dev/stderr
+                exit 1
+            fi
         fi
 
         require_config "$(__get_config_path)" || exit 1
