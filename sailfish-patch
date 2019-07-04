@@ -624,15 +624,11 @@ require_config() { # 1: expected config file location
 # return unchecked base config path to be used
 # in validator functions
 __get_config_path() {
-    if [[ -f "$(pwd)/CONFIG" ]]; then
-        if [[ -f "$(pwd)/build/CONFIG" ]]; then
-            echo "warning: two config files found (in '$(pwd)' and '.../build')" >/dev/stderr
-            echo "         using the first one" >/dev/stderr
-        fi
-        echo -n "$(pwd)/CONFIG"
-    else
-        echo -n "$(pwd)/build/CONFIG"
+    if [[ -f "$(pwd)/build/CONFIG" ]]; then
+        echo "warning: config file in non-standard location found (below 'build')" >/dev/stderr
     fi
+
+    echo -n "$(pwd)/CONFIG"
 }
 
 # return unchecked base build path to be used in
