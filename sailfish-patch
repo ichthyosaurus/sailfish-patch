@@ -1220,7 +1220,23 @@ else
         fi
 
         cp unified_diff.patch "$rpm_build_dir/unified_diff.patch"
+        cp unified_diff.patch "$dist_build_dir/unified_diff.patch"
         mv unified_diff.patch "$tarball_build_dir/unified_diff.patch"
+
+        if [[ -f "$base/COPYING" ]]; then
+            cp "$base/COPYING" "$dist_build_dir"
+        fi
+
+        cp "$config" "$dist_build_dir"
+        readarray -t screenshots <<<"$(get_multi_config "$config" "Screenshots")"
+
+        for s in "${screenshots[@]}"; do
+            if [[ -f "$s" || -f "$(dirname "$config")/$s" ]]; then
+                [[ -f "$s" ]] && cp "$s" "$dist_build_dir" || cp "$(dirname "$config")/$s" "$dist_build_dir"
+                s="${s//\//\\/}" # escape slashes
+                sed -E -i "s/-[ \t]*$s$/- $(basename "$s")/g" "$dist_build_dir/$(basename "$config")"
+            fi
+        done
 
         rpm_version="$(get_single_config "$config" "Version")"
         release="$(get_single_config "$config" "Release")"
@@ -1282,6 +1298,17 @@ else
         else
             echo "success: tarball built"
             mv --backup=t "$tarball" "$build_dir"
+        fi
+
+        # build code distribution package
+        echo "building code distribution package..."
+        mv "$dist_build_dir" "$package" &&\
+            mv --backup=t "$package" "$build_dir"
+
+        if (( $? != 0 )); then
+            echo "error: failed to build code distribution package" >/dev/stderr
+        else
+            echo "success: code distribution package built"
         fi
 
         # clean up
