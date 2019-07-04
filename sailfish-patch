@@ -735,6 +735,38 @@ __create_diff() { # 1: config, 2: save path
                     s@(--git a/.*) b${prefix}${patched#/}/@\1 b${prefix}@g" > "$2"
 }
 
+__print_initial_help() { # 1: original path, 2: patched path, 3: extra path
+    cat <<EOF
+== SailfishOS Patch: $create_new_name ==
+
+The patch has been prepared. The next step is to edit the
+configuration file (CONFIG). Then copy all original files into the two
+directories '$(basename "$1")' and '$(basename "$2")'. Make your changes in the latter.
+
+You can add all packages the patch is based on in the 'SourcePackages' field
+in the configuration file. Running 'sailfish-patch -u' will update all source
+files and makes it easy to adapt the patch to new upstream versions.
+
+Note that it must be possible for sailfish-patch to connect to your device via
+SSH if you want to use source packages from the official repos. Make sure this
+is configured correctly. (This is not needed for OpenRepos sources.)
+
+If you want to add your own settings pages or include translation files,
+icons etc. in your patch, you can place them in the '$(basename "$3")' directory. Note
+that this is not yet supported for RPMs.
+
+Tips:
+- Use 'rpm -qf /path/to/file' to find out which package a file belongs to.
+- Use 'pkcon get-details packagename' to check which version is installed.
+- Use 'sailfish-patch -b -p' to test the patch directly after building (needs ssh).
+- Do not push your patch to a public repository. Instead, publish the 'code
+  distribution package' which includes only the files that belong to you.
+  Other users can rebuild the development environment by running
+  'sailfish-patch -u' in the published directory. This way, you do not have to
+  publish potentially copyrighted material without permission.
+EOF
+}
+
 
 if [[ "$create_new" == true ]]; then
     require_templates || exit 1
@@ -765,35 +797,7 @@ if [[ "$create_new" == true ]]; then
 
     echo "patch created: $create_new_name"
 
-    cat <<EOF
-== SailfishOS Patch: $create_new_name ==
-
-The patch has been prepared. The next step is to edit the
-configuration file (CONFIG). Then copy all original files into the two
-directories '$(basename "$(__get_original_path)")' and '$(basename "$(__get_patched_path)")'. Make your changes in the latter.
-
-You can add all packages the patch is based on in the 'SourcePackages' field
-in the configuration file. Running 'sailfish-patch -u' will update all source
-files and makes it easy to adapt the patch to new upstream versions.
-
-Note that it must be possible for sailfish-patch to connect to your device via
-SSH if you want to use source packages from the official repos. Make sure this
-is configured correctly. (This is not needed for OpenRepos sources.)
-
-If you want to add your own settings pages or include translation files,
-icons etc. in your patch, you can place them in the '$(basename "$(__get_extra_path)")' directory. Note
-that this is not yet supported for RPMs.
-
-Tips:
-- Use 'rpm -qf /path/to/file' to find out which package a file belongs to.
-- Use 'pkcon get-details packagename' to check which version is installed.
-- Use 'sailfish-patch -b -p' to test the patch directly after building (needs ssh).
-- Do not push your patch to a public repository. Instead, publish the 'code
-  distribution package' which includes only the files that belong to you.
-  Other users can rebuild the development environment by running
-  'sailfish-patch -u' in the published directory. This way, you do not have to
-  publish potentially copyrighted material without permission.
-EOF
+    __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
 
     exit 0
 else
@@ -1107,6 +1111,8 @@ else
 
         git add "$(__get_config_path)" "$(__get_original_path)" "$(__get_patched_path)" &&\
             git commit -m "patch automatically imported by sailfish-patch"
+
+        __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
     fi
 
     if [[ "$update" == true ]]; then
@@ -1184,6 +1190,7 @@ else
 
             if [[ "$initial_dist_update" == true ]]; then
                 __update_apply_diff "$initial_dist_diff" || exit 1
+                __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
             else
                 __update_apply_diff "$diff_out" || exit 1
                 rm "$diff_out"
