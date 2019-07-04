@@ -105,7 +105,7 @@ Arguments:
     -b, --build                 - build RPM and tarball
     -u, --update                - update the working directory with the
                                   latest sources (needs working ssh connection
-                                  for all sources except Openrepos)
+                                  for all sources except OpenRepos)
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
@@ -768,7 +768,7 @@ files and makes it easy to adapt the patch to new upstream versions.
 
 Note that it must be possible for sailfish-patch to connect to your device via
 SSH if you want to use source packages from the official repos. Make sure this
-is configured correctly. (This is not needed for Openrepos sources.)
+is configured correctly. (This is not needed for OpenRepos sources.)
 
 If you want to add your own settings pages or include translation files,
 icons etc. in your patch, you can place them in the '$(basename "$(__get_extra_path)")' directory. Note
@@ -879,13 +879,13 @@ else
                 file="$packages/${source}.rpm"
 
                 if [[ -z "$user" ]]; then
-                    echo "error: failed to determine Openrepos user for '$source'" >/dev/stderr
+                    echo "error: failed to determine OpenRepos user for '$source'" >/dev/stderr
                     return 1
                 fi
 
                 local repo_url="${openrepos_url%/}/${user}/personal/main/${source:0:1}/"
                 if ! local html="$(curl "$repo_url")"; then
-                    echo "error: failed to download Openrepos repository for '$source'" >/dev/stderr
+                    echo "error: failed to download OpenRepos repository for '$source'" >/dev/stderr
                     return 1
                 fi
 
@@ -896,14 +896,14 @@ else
                     sort --version-sort -u)"
 
                 if (( $? != 0 )); then
-                    echo "error: failed to extract Openrepos repository listing for '$source'" >/dev/stderr
+                    echo "error: failed to extract OpenRepos repository listing for '$source'" >/dev/stderr
                     return 1
                 fi
 
                 local rpm="$(echo "$repo" | grep "$source" | tail -1)"
 
                 if (( $? != 0 )); then
-                    echo "error: failed to extract Openrepos package url for '$source'" >/dev/stderr
+                    echo "error: failed to extract OpenRepos package url for '$source'" >/dev/stderr
                     return 1
                 fi
                 set +o pipefail
