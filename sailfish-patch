@@ -1049,14 +1049,6 @@ U3mJDmLXkT4AAYFZy5ICAAHZV06xxGf7AgAAAAAEWVo=
 EOF
 }
 
-template_dir="$(dirname "$(readlink -f "$0")")/templates"
-json_file="$template_dir/patch.json"
-gitignore_file="$template_dir/gitignore"
-spec_file="$template_dir/patch.spec"
-license_file="$template_dir/COPYING"
-config_file="$template_dir/CONFIG"
-icon_file="$template_dir/icon-openrepos.png"
-
 get_single_config() { # 1: config file, 2: key, 3: default value
     # we can safely assume the file exists and is valid
     # which means we can also assume the key exists if it is required
@@ -1107,22 +1099,6 @@ get_multi_config() { # 1: config file, 2: key, 3: default value
     else
         printf "%s\n" "${selected[@]}"
     fi
-}
-
-require_templates() {
-    if [[ ! -d "$template_dir" ]]; then
-        echo "error: template directory not found" >/dev/stderr
-        return 1
-    fi
-
-    for i in "$json_file" "$gitignore_file" "$spec_file" "$license_file" "$config_file" "$icon_file"; do
-        if [[ ! -f "$i" ]]; then
-            echo "error: template '$i' not found" >/dev/stderr
-            return 1
-        fi
-    done
-
-    return 0
 }
 
 config_checker="$0"
@@ -1282,8 +1258,6 @@ EOF
 
 
 if [[ "$create_new" == true ]]; then
-    require_templates || exit 1
-
     if [[ -e "$create_new_name" ]]; then
         echo "error: the file or directory with the name '$create_new_name' already exists" >/dev/stderr
         exit 1
@@ -1301,9 +1275,9 @@ if [[ "$create_new" == true ]]; then
     mkdir -p "$(__get_sources_path)"
     mkdir -p "$(__get_build_path)"
 
-    cp "$config_file" CONFIG
-    cp "$license_file" COPYING
-    cp "$gitignore_file" .gitignore
+    __save_template_config CONFIG
+    __save_template_copying COPYING
+    __save_template_gitignore .gitignore
 
     git add CONFIG COPYING .gitignore
     git commit -m "patch skeleton automatically created by sailfish-patch"
@@ -1735,9 +1709,6 @@ else
         build_dir="$(__get_build_path)"
         extra_dir="$(__get_extra_path)"
 
-        # require templates
-        require_templates || exit 1
-
         # create temp dir
         temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
 
@@ -1774,8 +1745,8 @@ else
 
         mkdir -p "$rpm_build_dir" "$tarball_build_dir" "$dist_build_dir"
 
-        cp "$spec_file" rpm.spec
-        cp "$json_file" "$rpm_build_dir/patch.json"
+        __save_template_spec rpm.spec
+        __save_template_json "$rpm_build_dir/patch.json"
 
         if [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]]; then
             cp extra/* "$rpm_build_dir"
@@ -1957,6 +1928,8 @@ $value"
             read -n 1 -s -p "Keyword: $i"; echo
         done
 
+        icon_file="/tmp/sailfish-patch_icon.png"
+        __save_template_icon "$icon_file"
         echo -n "$icon_file" | xclip -selection c
         read -n 1 -s -p "Icon: $icon_file"; echo
 
