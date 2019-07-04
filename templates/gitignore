@@ -1,9 +1,0 @@
-documentation.list
-RPMS
-.directory
-source-packages
-original.tmp
-original_diff_*.patch
-update_diff_*.patch
-build.*
-*~

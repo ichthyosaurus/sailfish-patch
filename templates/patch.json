@@ -1,8 +1,0 @@
-{
-    "name": "@DISPLAYNAME@",
-    "description": "@DESCRIPTION@",
-    "category": "@CATEGORY@",
-    "infos": {
-        "maintainer": "@MAINTAINER@"
-    }
-}
