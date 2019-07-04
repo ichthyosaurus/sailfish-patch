@@ -783,6 +783,16 @@ is configured correctly. (This is not needed for OpenRepos sources.)
 If you want to add your own settings pages or include translation files,
 icons etc. in your patch, you can place them in the '$(basename "$(__get_extra_path)")' directory. Note
 that this is not yet supported for RPMs.
+
+Tips:
+- Use 'rpm -qf /path/to/file' to find out which package a file belongs to.
+- Use 'pkcon get-details packagename' to check which version is installed.
+- Use 'sailfish-patch -b -p' to test the patch directly after building (needs ssh).
+- Do not push your patch to a public repository. Instead, publish the 'code
+  distribution package' which includes only the files that belong to you.
+  Other users can rebuild the development environment by running
+  'sailfish-patch -u' in the published directory. This way, you do not have to
+  publish potentially copyrighted material without permission.
 EOF
 
     exit 0
