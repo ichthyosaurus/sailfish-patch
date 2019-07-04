@@ -1114,22 +1114,27 @@ else
 
         require_config "$(__get_config_path)" || exit 1
 
-        readarray -t sources <<<"$(get_multi_config "$(__get_config_path)" "SourcePackages")"
+        readarray -t sources <<<"$(get_multi_config "$(__get_config_path)" "SourcePackages" "")"
 
-        if (( ${#sources[@]} == 0 )); then
+        if (( ${#sources[@]} == 1 )) && [[ -z "$(trim "${sources[0]}")" ]]; then
             if [[ -d "$original" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
                 echo "warning: no source packages specified but original source files found"
-            else
-                mkdir -p "$original"
             fi
 
             echo "no source packages specified: automatic update is not possible"
         else
             if [[ ! -d "$original" || ! -d "$patched" ]]; then
-                echo "error: make sure the following directories exists:" >/dev/stderr
-                echo "- $original" >/dev/stderr
-                echo "- $patched" >/dev/stderr
-                exit 1
+                if [[ -f "unified_diff.patch" ]]; then
+                    echo "note: running initial distribution update"
+                    initial_dist_update=true
+                    initial_dist_diff="unified_diff.patch"
+                    mkdir -p "$original" "$patched" "$(__get_build_path)"
+                else
+                    echo "error: make sure the following directories exists:" >/dev/stderr
+                    echo "- $original" >/dev/stderr
+                    echo "- $patched" >/dev/stderr
+                    exit 1
+                fi
             fi
 
             have_original=true
@@ -1167,8 +1172,12 @@ else
                 __update_copy_sources || exit 1
             fi
 
-            __update_apply_diff "$diff_out" || exit 1
-            rm "$diff_out"
+            if [[ "$initial_dist_update" == true ]]; then
+                __update_apply_diff "$initial_dist_diff" || exit 1
+            else
+                __update_apply_diff "$diff_out" || exit 1
+                rm "$diff_out"
+            fi
         fi
     fi
 
