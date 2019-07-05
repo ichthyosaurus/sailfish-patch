@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language SYSTEM "language.dtd">
 
+<!--
+This file is part of sailfish-patch 2.0.0 (2019-07-05)
+
+Copyright (C) 2019  Mirian Margiani
+
+sailfish-patch is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+sailfish-patch is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
 <language name="SailfishOS Patch" section="Configuration" extensions="CONFIG" mimetype="" version="1" kateversion="2.4" author="Mirian Margiani (mirian@margiani.ch)" license="GPL">
     <highlighting>
         <contexts>
