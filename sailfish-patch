@@ -1,8 +1,8 @@
 #!/bin/bash
 # kate: syntax bash
 #
-# sailfish-patch 2.0.0 (2019-06-29)
-# Copyright (C) 2016  Cornerman (https://github.com/cornerman/sailfish-patch)
+# sailfish-patch 2.0.0 (2019-07-05)
+# Copyright (C) 2016  Cornerman (https://github.com/cornerman/gen-sailfish-patch)
 #               2018-2019  Mirian Margiani
 #
 # This program is free software: you can redistribute it and/or modify
@@ -68,9 +68,8 @@ dependencies() { # 1: echo/no-echo
 
 version() {
     echo "\
-sailfish-patch 2.0.0 (2019-06-29)
-Copyright (C) 2016  Cornerman
-              2018-2019  Mirian Margiani
+sailfish-patch 2.0.0 (2019-07-05)
+Copyright (C) 2018-2019  Mirian Margiani, 2016  Cornerman
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law."
