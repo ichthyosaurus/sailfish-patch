@@ -24,6 +24,7 @@ DEPENDENCIES=(
     patch git scp ssh sed xclip
     rpm rpmbuild rpm2cpio cpio tar
     hxselect hxnormalize
+    du numfmt
 )
 
 # check environment variables
@@ -96,7 +97,7 @@ make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 Note: separate settings pages are currently only supported via Patchmanager.
 
 Usage:
-    $script [-b] [-p] [-Po] [-Pm]
+    $script [-b] [-p] [-Po] [-Pm] [-S|-S ROUNDS]
     $script -c NAME
     $script -u
     $script -i CONFIG TARBALL
@@ -115,6 +116,9 @@ Arguments:
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
+    -S, --optimize-screenshots [ROUNDS] - optimize PNG screenshot files of the current project
+                                  optional: specify number of processing
+                                  round for best result (default: 1)
 
     -V, --version               - show version and license information
     -h, --help                  - show this help and exit
@@ -149,6 +153,8 @@ import=false
 import_config=
 import_tarball=
 import_command="$0"
+optimize_screenshots=false
+optimize_screenshots_runs=1
 publish_via_ssh=false
 publish_to_openrepos=false
 publish_to_pm_catalogue=false
@@ -222,6 +228,14 @@ while [[ $# > 0 ]]; do
         ;;
         -Po|--publish-openrepos) publish_to_openrepos=true;;
         -Pm|--publish-patchmanager) publish_to_pm_catalogue=true;;
+        -S|--optimize-screenshots)
+            optimize_screenshots=true
+
+            if [[ -n "$2" ]] && echo -n "$2" | grep -Pqoe '^\d+$'; then
+                optimize_screenshots_runs="$2"
+                shift
+            fi
+        ;;
         -g|--use-git-apply) patch_utility=git;;
         -eC|--export-config   ) debug_export_template+=(config);;
         -eL|--export-license  ) debug_export_template+=(license);;
@@ -379,6 +393,15 @@ if [[ "$check_config" == true ]]; then
                 if [[ ! -f "$value" ]] && [[ ! -f "$(dirname "$check_config_name")/$value" ]]; then
                     echo "error: screenshot file '$value' not found (line $count)" >/dev/stderr
                     error=true
+                else
+                    screen="$value"
+                    if [[ ! -f "$value" ]]; then
+                        screen="$(dirname "$check_config_name")/$value"
+                    fi
+
+                    if (( "$(du -bs "$screen" | grep -Poe '^\d+')" >= 500000 )); then
+                        echo "note: screenshot file '$value' is quite large; did you optimize all PNGs using '-S'?" >/dev/stderr
+                    fi
                 fi
             elif [[ "$is_multiline" == "CompatibleVersions" ]]; then
                 if ! echo "$check_versions" | grep -Pqoe "^$value"; then
@@ -1682,6 +1705,69 @@ else
                 rm "$diff_out"
             fi
         fi
+    fi
+
+    if [[ "$optimize_screenshots" == true ]]; then
+        __show_stats() { # 1: title, 2: osize, 3: nsize
+            local osize="$2"
+            local nsize="$3"
+            local change="$((nsize-osize))"
+            local state=""
+
+            if ((change > 0)); then
+                state="+$(echo "$change" | numfmt --to=iec)"
+            elif ((change == 0)); then
+                state="no change"
+            else
+                state="$(echo "$change" | numfmt --to=iec)"
+            fi
+
+            echo "$1: $(echo "$osize" | numfmt --to=iec) => $(echo "$nsize" | numfmt --to=iec) ($state)"
+        }
+
+        require_config "$(__get_config_path)" || exit 1
+        readarray -t screenshots <<<"$(get_multi_config "$(__get_config_path)" "Screenshots")"
+
+        if [[ -z "$optimize_screenshots_runs" ]]; then
+            optimize_screenshots_runs=1
+        else
+            screen_add=" ($optimize_screenshots_runs rounds)"
+        fi
+
+        echo "optimizing screenshots$screen_add..."
+
+        screen_files=()
+        old_size=0
+        for s in "${screenshots[@]}"; do
+            screen="$s"
+            [[ ! -f "$s" ]] && screen="$(dirname "$config")/$s"
+            screen_files+=("$screen")
+            old_size=$(( old_size + $(du -bs "$screen" | grep -Poe '^\d+') ))
+        done
+
+        last_size=$old_size
+        for i in $(seq 1 "$optimize_screenshots_runs"); do
+            (( $optimize_screenshots_runs > 1 )) && echo "round $i / $optimize_screenshots_runs..."
+            new_size=0
+            for s in "${screen_files[@]}"; do
+                convert -resize 1200x1200\> "$s" "$s-resized.png"
+                pngcrush "$s-resized.png" "$s-crushed.png" && pngquant "$s-crushed.png"
+                mv "$s-crushed-fs8.png" "$s"
+                rm "$s-resized.png" "$s-crushed.png"
+                new_size=$(( new_size + $(du -bs "$s" | grep -Poe '^\d+') ))
+            done
+
+            (( $optimize_screenshots_runs > 1 )) && __show_stats "round $i" "$last_size" "$new_size"
+            last_size="$new_size"
+            unset screen
+        done
+
+        new_size=0
+        for s in "${screen_files[@]}"; do
+            new_size=$(( new_size + $(du -bs "$s" | grep -Poe '^\d+') ))
+        done
+
+        __show_stats "screenshots optimized" "$old_size" "$new_size"
     fi
 
     if [[ "$build" == true ]]; then
