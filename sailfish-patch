@@ -25,6 +25,7 @@ DEPENDENCIES=(
     rpm rpmbuild rpm2cpio cpio tar
     hxselect hxnormalize
     du numfmt
+    pngcrush pngquant convert
 )
 
 # check environment variables
