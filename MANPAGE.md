@@ -145,14 +145,20 @@ libraries. Make sure they are all installed and setup correctly.
 - scp
 - ssh
 - sed
+- xclip
 - rpm
 - rpmbuild
 - rpm2cpio
 - cpio
 - tar
-- xclip
 - hxselect
 - hxnormalize
+- du
+- numfmt
+- html2text
+- pngcrush
+- pngquant
+- convert
 
 ## AUTHOR
 Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman.

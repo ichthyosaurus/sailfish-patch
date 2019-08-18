@@ -37,11 +37,11 @@ See `MANPAGE.md` for more information.
 
 `sailfish-patch` is written purely in `bash` but has the following dependencies:
 
-    git, patch, sed, tar
-    rpm, rpmbuild, rpm2cpio, cpio
-    scp, ssh
-    xclip
-    hxselect, hxnormalize (html-xml-utils)
+    patch git scp ssh sed xclip
+    rpm rpmbuild rpm2cpio cpio tar
+    hxselect hxnormalize (from package html-xml-utils)
+    du numfmt html2text
+    pngcrush pngquant convert (from package imagemagick)
 
 # License
 
