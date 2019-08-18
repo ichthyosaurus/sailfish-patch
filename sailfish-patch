@@ -386,7 +386,7 @@ if [[ "$check_config" == true ]]; then
             __check_package_specification() { # 1: error name
                 if ! echo "$value" | grep -Pqe "^([^: ]+:|)[^: ]+( (<|>|=|<=|>=) .+|)$"; then
                     echo "error: invalid $is_multiline package specification '$value' (line $count)" >/dev/stderr
-                    error=true
+                    error=true # global
                 fi
             }
 
@@ -1957,12 +1957,12 @@ else
     fi
 
     __wizard_load() { # 1: type, 2: title, 3: key
-        config="$(__get_config_path)" # we assume it has been checked before
+        local config="$(__get_config_path)" # we assume it has been checked before
 
         if [[ "${1:0:1}" == "s" ]]; then
-            value="$(get_single_config "$config" "$3")"
+            local value="$(get_single_config "$config" "$3")"
         else
-            value="$(get_multi_config "$config" "$3")"
+            local value="$(get_multi_config "$config" "$3")"
         fi
 
         echo -n "$value" | xclip -selection c
@@ -1978,16 +1978,18 @@ $value"
     }
 
     __wizard_load_screenshots() {
-        config="$(__get_config_path)" # we assume it has been checked before
-        first_path="$(get_multi_config "$config" "Screenshots" | head -1)"
+        local config="$(__get_config_path)" # we assume it has been checked before
+        local first_path="$(get_multi_config "$config" "Screenshots" | head -1)"
+
         if [[ "${first_path:0:1}" == "/" ]]; then
-            screenshots_path="$(readlink -m "$(dirname "$first_path")")"
+            local screenshots_path="$(readlink -m "$(dirname "$first_path")")"
         elif [[ -n "$first_path" ]]; then
             # relative paths are relative to the config file
-            screenshots_path="$(readlink -m "$(dirname "$(__get_config_path)")")"
+            local screenshots_path="$(readlink -m "$(dirname "$(__get_config_path)")")"
         else
-            screenshots_path=
+            local screenshots_path=
         fi
+
         echo -n "$screenshots_path" | xclip -selection c
         read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
     }
@@ -2058,7 +2060,7 @@ fi
 
 if (( ${#debug_export_template[@]} > 0 )); then
     __save_file() { # 1: base name, 2: extension
-        n="$1?.$2"; if [[ -z "$2" ]]; then n="$1?"; fi
+        local n="$1?.$2"; if [[ -z "$2" ]]; then n="$1?"; fi
         if [[ -f "${n//\?/}" ]]; then
             mktemp -p . "${n//\?/_XXXX}"
         else
