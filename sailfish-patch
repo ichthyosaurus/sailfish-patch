@@ -24,7 +24,7 @@ DEPENDENCIES=(
     patch git scp ssh sed xclip
     rpm rpmbuild rpm2cpio cpio tar
     hxselect hxnormalize
-    du numfmt
+    du numfmt html2text
     pngcrush pngquant convert
 )
 
@@ -1994,6 +1994,64 @@ $value"
         read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
     }
 
+    __wizard_load_description() { # 1: target ('openrepos' or 'catalogue')
+        local config="$(__get_config_path)" # we assume it has been checked before
+        local description="$(get_multi_config "$config" "Description")"
+
+        # - put each paragraph separated by a blank line into <p> tags
+        readarray -t description_lines <<<"$description"
+        description=
+
+        local in_paragraph=false
+        for l in "${description_lines[@]}"; do
+            l="$(trim "$l")"
+
+            if [[ -n "$l" ]]; then
+                if [[ "$in_paragraph" == false ]]; then
+                    in_paragraph=true
+                    description+="<p>"
+                fi
+                description+="$l "
+            else
+                if [[ "$in_paragraph" == true ]]; then
+                    description="${description% }</p>
+" # newline intended
+                fi
+                in_paragraph=false
+            fi
+        done
+
+        if [[ "$1" == "openrepos" ]]; then
+            # - put links into <a> tags
+            # - append extra links
+
+            description="$(echo "$description" | perl -pe 's/\[(.*?)\]\((.+?)\)/<a href="\2">\1<\/a>/g')"
+
+            local sources_link="$(get_single_config "$config" "SourcesLink")"
+            local discussion_link="$(get_single_config "$config" "DiscussionLink")"
+            local donations_link="$(get_single_config "$config" "DonationsLink")"
+
+            for l in "Sources:$sources_link" "Discussion:$discussion_link" "Donations:$donations_link"; do
+                if [[ -n "${l#*:}" ]]; then
+                    description="$description
+<p>${l%%:*}: <a href=\"${l#*:}\">${l#*:}</a></p>"
+                fi
+            done
+        elif [[ "$1" == "catalogue" ]]; then
+            # Translate html tags (back) to plain text; links are replaced by an in-text representation.
+            # This back-and-forth makes sure everything is properly cleaned up.
+            description="$(echo "$description" | html2text | perl -pe 's/\[(.*?)\]\((.+?)\)/\1 (\2)/g')"
+        else
+            echo "internal error: invalid description target given ('$1')" >/dev/stderr
+        fi
+
+        echo -n "$description" | xclip -selection c
+
+        read -n 1 -s -p "Description:
+$description"  # newline intended
+        echo
+    }
+
     if [[ "$publish_to_openrepos" == true ]]; then
         echo "running wizard for publishing to OpenRepos..."
         echo "Each value will be copied to the clipboard. Press any key to load the"
@@ -2022,7 +2080,7 @@ $value"
         read -n 1 -s -p "Icon: $icon_file"; echo
 
         __wizard_load s "Summary" "Summary"
-        __wizard_load m "Description" "Description"
+        __wizard_load_description "openrepos"
         __wizard_load_screenshots
 
         echo -n "$rpm" | xclip -selection c
@@ -2041,7 +2099,7 @@ $value"
 
         __wizard_load s "Internal name" "PackageName"
         __wizard_load s "Display name" "DisplayName"
-        __wizard_load m "Description" "Description"
+        __wizard_load_description "catalogue"
         __wizard_load s "Category" "Category"
         __wizard_load s "Discussion link" "DiscussionLink"
         __wizard_load s "Donations link" "DonationsLink"
