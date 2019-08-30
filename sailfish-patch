@@ -2024,12 +2024,11 @@ $value"
             fi
         done
 
+        # html-ify links
+        description="$(echo "$description" | perl -p0e 's/\[(.*?)\]\((.+?)\)/<a href="\2">\1<\/a>/g')"
+
         if [[ "$1" == "openrepos" ]]; then
-            # - put links into <a> tags
-            # - append extra links
-
-            description="$(echo "$description" | perl -pe 's/\[(.*?)\]\((.+?)\)/<a href="\2">\1<\/a>/g')"
-
+            # append extra links
             local sources_link="$(get_single_config "$config" "SourcesLink")"
             local discussion_link="$(get_single_config "$config" "DiscussionLink")"
             local donations_link="$(get_single_config "$config" "DonationsLink")"
@@ -2043,7 +2042,7 @@ $value"
         elif [[ "$1" == "catalogue" ]]; then
             # Translate html tags (back) to plain text; links are replaced by an in-text representation.
             # This back-and-forth makes sure everything is properly cleaned up.
-            description="$(echo "$description" | html2text | perl -pe 's/\[(.*?)\]\((.+?)\)/\1 (\2)/g')"
+            description="$(echo "$description" | html2text -b 0 --reference-links --no-wrap-links | perl -p0e 's/\[(.*?)\]\[([0-9]+)\]/\1 (\2)/g')"
         else
             echo "internal error: invalid description target given ('$1')" >/dev/stderr
         fi
