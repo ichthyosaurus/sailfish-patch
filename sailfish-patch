@@ -293,7 +293,8 @@ check_versions="1.1.9.30
 3.0.2.8
 3.0.3.8
 3.0.3.9
-3.0.3.10"
+3.0.3.10
+3.1.0.11"
 
 declare -A check_defaults=(
 [SourcePackages]="username:source-package-from-openrepos <= 1.0.10|source-package-from-official-repo"
@@ -679,6 +680,7 @@ CompatibleVersions:
 - 3.0.3.8
 - 3.0.3.9
 - 3.0.3.10
+- 3.1.0.11
 
 Changelog:
 - initial public release
