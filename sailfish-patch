@@ -1431,9 +1431,13 @@ else
                 fi
 
                 local repo_url="${openrepos_url%/}/${user}/personal/main/${source:0:1}/"
-                if ! local html="$(curl "$repo_url")"; then
-                    echo "error: failed to download OpenRepos repository for '$source'" >/dev/stderr
+                local html=
+                local repo_status="$(curl -LI "$repo_url" 2>/dev/null | head -n 1 | cut -d$' ' -f2)"
+                if [[ "$repo_status" != 2[0-9][0-9] ]]; then
+                    echo "error: failed to download user \"$user\"'s OpenRepos repository for '$source' (code $repo_status)" >/dev/stderr
                     return 1
+                else
+                    html="$(curl "$repo_url")"
                 fi
 
                 set -o pipefail
