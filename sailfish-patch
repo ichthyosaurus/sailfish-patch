@@ -1483,7 +1483,7 @@ else
                 scp nemo@"$SF_PATCH_SSH_TARGET":"$remote_temp_dir/${source}*" "$file"
 
                 if (( $? != 0 )); then
-                    echo "error: failed transfer downloaded package '$source' from the device" >/dev/stderr
+                    echo "error: failed to transfer downloaded package '$source' from the device" >/dev/stderr
                     return 1
                 fi
             fi
