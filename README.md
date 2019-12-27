@@ -40,7 +40,8 @@ See `MANPAGE.md` for more information.
     patch git scp ssh sed xclip
     rpm rpmbuild rpm2cpio cpio tar
     hxselect hxnormalize (from package html-xml-utils)
-    du numfmt html2text
+    du numfmt
+    html2text (from package python3-html2text)
     pngcrush pngquant convert (from package imagemagick)
 
 # License

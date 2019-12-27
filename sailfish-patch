@@ -98,7 +98,7 @@ make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
 Note: separate settings pages are currently only supported via Patchmanager.
 
 Usage:
-    $script [-b] [-p] [-Po] [-Pm] [-S|-S ROUNDS]
+    $script [-b] [-p] [-Po [latest]] [-Pm [latest]] [-S|-S ROUNDS]
     $script -c NAME
     $script -u
     $script -i CONFIG TARBALL
@@ -116,7 +116,10 @@ Arguments:
     -f, --force                 - skip some safety checks
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
+                                  When given 'latest' as argument to -Po, the wizard
+                                  will provide info for updating the entry.
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
+                                  See -Po for more details.
     -S, --optimize-screenshots [ROUNDS] - optimize PNG screenshot files of the current project
                                   optional: specify number of processing
                                   round for best result (default: 1)
@@ -159,6 +162,7 @@ optimize_screenshots_runs=1
 publish_via_ssh=false
 publish_to_openrepos=false
 publish_to_pm_catalogue=false
+publish_update_only=false
 force=false
 patch_utility=patch
 debug_export_template=()
@@ -227,8 +231,14 @@ while [[ $# > 0 ]]; do
                 publish_via_ssh=true
             fi
         ;;
-        -Po|--publish-openrepos) publish_to_openrepos=true;;
-        -Pm|--publish-patchmanager) publish_to_pm_catalogue=true;;
+        -Po|--publish-openrepos)
+            publish_to_openrepos=true
+            [[ "$2" == latest ]] && publish_update_only=true && shift
+        ;;
+        -Pm|--publish-patchmanager)
+            publish_to_pm_catalogue=true
+            [[ "$2" == latest ]] && publish_update_only=true && shift
+        ;;
         -S|--optimize-screenshots)
             optimize_screenshots=true
 
@@ -2077,28 +2087,32 @@ $description"  # newline intended
         require_current_package rpm || exit 1
         rpm="$(__get_package_path rpm)"
         config="$(__get_config_path)" # safe because we already checked above
-
         name="$(get_single_config "$config" "DisplayName")"
-        echo -n "Patch: $name" | xclip -selection c
-        read -n 1 -s -p "Application name: Patch: $name"; echo
 
-        echo -n "Applications -> Patches" | xclip -selection c
-        read -n 1 -s -p "Category: Applications -> Patches"; echo
+        if [[ "$publish_update_only" == true ]]; then
+            echo "Patch: $name"
+        else
+            echo -n "Patch: $name" | xclip -selection c
+            read -n 1 -s -p "Application name: Patch: $name"; echo
 
-        readarray -t keywords <<<"$(get_multi_config "$config" "Keywords")"
-        for i in "${keywords[@]}"; do
-            echo -n "$i" | xclip -selection c
-            read -n 1 -s -p "Keyword: $i"; echo
-        done
+            echo -n "Applications -> Patches" | xclip -selection c
+            read -n 1 -s -p "Category: Applications -> Patches"; echo
 
-        icon_file="/tmp/sailfish-patch_icon.png"
-        __save_template_icon "$icon_file"
-        echo -n "$icon_file" | xclip -selection c
-        read -n 1 -s -p "Icon: $icon_file"; echo
+            readarray -t keywords <<<"$(get_multi_config "$config" "Keywords")"
+            for i in "${keywords[@]}"; do
+                echo -n "$i" | xclip -selection c
+                read -n 1 -s -p "Keyword: $i"; echo
+            done
 
-        __wizard_load s "Summary" "Summary"
-        __wizard_load_description "openrepos"
-        __wizard_load_screenshots
+            icon_file="/tmp/sailfish-patch_icon.png"
+            __save_template_icon "$icon_file"
+            echo -n "$icon_file" | xclip -selection c
+            read -n 1 -s -p "Icon: $icon_file"; echo
+
+            __wizard_load s "Summary" "Summary"
+            __wizard_load_description "openrepos"
+            __wizard_load_screenshots
+        fi
 
         echo -n "$rpm" | xclip -selection c
         read -n 1 -s -p "Application version: $rpm"; echo
@@ -2112,22 +2126,39 @@ $description"  # newline intended
         echo "next value."
         echo
         require_current_package tarball || exit 1
+        config="$(__get_config_path)" # safe because we already checked above
         tarball="$(__get_package_path tarball)"
 
-        __wizard_load s "Internal name" "PackageName"
-        __wizard_load s "Display name" "DisplayName"
-        __wizard_load_description "catalogue"
-        __wizard_load s "Category" "Category"
-        __wizard_load s "Discussion link" "DiscussionLink"
-        __wizard_load s "Donations link" "DonationsLink"
-        __wizard_load s "Sources link" "SourcesLink"
-        __wizard_load_screenshots
+        if [[ "$publish_update_only" == true ]]; then
+            echo "Patch: $(get_single_config "$config" "DisplayName")"
+        else
+            __wizard_load s "Internal name" "PackageName"
+            __wizard_load s "Display name" "DisplayName"
+            __wizard_load_description "catalogue"
+            __wizard_load s "Category" "Category"
+            __wizard_load s "Discussion link" "DiscussionLink"
+            __wizard_load s "Donations link" "DonationsLink"
+            __wizard_load s "Sources link" "SourcesLink"
+            __wizard_load_screenshots
+        fi
+
         __wizard_load s "Version" "Version"
         __wizard_load m "Compatible versions" "CompatibleVersions"
         echo -n "$tarball" | xclip -selection c
         read -n 1 -s -p "Patch archive: $tarball"; echo
 
-        __wizard_load m "Changelog" "Changelog"
+        if [[ "$publish_update_only" == true ]]; then
+            full_changelog="$(get_multi_config "$config" "Changelog")"
+            version="$(get_single_config "$config" "Version")"
+            update_changelog="$(echo "$full_changelog" | select_range "^[*]?.*?${version//./\.}.*?:" "^[*]?.*?[0-9]+.*?:")"
+            echo -n "$update_changelog" | xclip -selection c
+
+            read -n 1 -s -p "Changelog:
+$update_changelog"
+            echo
+        else
+            __wizard_load m "Changelog" "Changelog"
+        fi
 
         echo done
     fi
