@@ -328,6 +328,12 @@ trim() {
     echo -n "$var"
 }
 
+select_range() { # 1: from pattern, 2: to pattern
+    [[ -z "$1" ]] && return 1 || local from_pattern="$1"
+    [[ -z "$2" ]] && return 1 || local to_pattern="$2"
+    awk "/$from_pattern/{flag=1;next}/$to_pattern/{flag=0}flag"
+}
+
 if [[ "$check_config" == true ]]; then
     if [[ ! -f "$check_config_name" ]]; then
         echo "error: could not find configuration file" >/dev/stderr
@@ -573,6 +579,27 @@ if [[ "$check_config" == true ]]; then
         fi
     done
 
+    # check versions
+    to_check_list="$(sed '/^\#/d;/^$/d;s/^\s*//g;' "$check_config_name" | # remove comments, blank lines, and leading whitespace
+        select_range "CompatibleVersions:" "^[^-]" | # extract the list between CompatibleVersions and the next section
+        sed 's/^-\s*//g' | # remove leading '-'
+        sort -V)" # sort by version
+    to_check_latest="$(echo "$to_check_list" | tail -1)"
+    to_check_latest_major="${to_check_latest%%.*}"
+    upstream_latest_major="$(echo "$check_versions" | grep -Ee "^[0-9]+\." | sort -u | tail -1 | cut -d. -f1)"
+    upstream_more_recent="$(echo "$check_versions" | sort -V |
+        select_range "^${to_check_latest//./\.}" "^[^$to_check_latest_major]")"
+
+    if [[ "$upstream_latest_major" != "$to_check_latest_major" ]]; then
+        echo "note: this patch does not support the latest SailfishOS version (v$to_check_latest_major vs v$upstream_latest_major)" >/dev/stderr
+    fi
+
+    if [[ -n "$upstream_more_recent" ]]; then
+        echo "note: there are newer releases for this major SailfishOS version available" >/dev/stderr
+        echo "      if the patch is compatible, consider updating the CompatibleVersions section" >/dev/stderr
+        echo -n "$upstream_more_recent" | sed 's/^/- /g' | tee /dev/stderr | xclip -selection c && echo >/dev/stderr
+    fi
+
     if [[ "$error" == true ]]; then
         exit 1
     else
@@ -654,7 +681,7 @@ Screenshots:
 - path/relative/to/config/file/location/screen-3.png
 
 CompatibleVersions:
-$(echo "$check_versions" | sed 's/^/- /g')
+$(echo "$check_versions" | sort -V | sed 's/^/- /g')
 
 Changelog:
 - 1.0.0 ($(date +%F)):
