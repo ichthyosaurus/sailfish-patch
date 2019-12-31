@@ -126,7 +126,7 @@ Arguments:
                                   See -Po for more details.
     -S, --optimize-screenshots [ROUNDS] - optimize PNG screenshot files of the current project
                                   optional: specify number of processing
-                                  round for best result (default: 1)
+                                  rounds for best result (default: 1)
 
     -V, --version               - show version and license information
     -h, --help                  - show this help and exit
