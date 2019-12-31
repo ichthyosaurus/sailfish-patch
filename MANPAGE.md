@@ -5,7 +5,8 @@
 sailfish-patch - Manage your SailfishOS patches
 
 ## SYNOPSIS
-`sailfish-patch` [-b] [-p] [-Po] [-Pm]
+
+`sailfish-patch` [-b] [-p] [-Po [latest]] [-Pm [latest]] [-S|-S ROUNDS]
 
 `sailfish-patch` [-c NAME]
 
@@ -56,17 +57,54 @@ Tips:
 `-C, --check-config FILE`
   Validate config file FILE
 
+`-i, --import CONFIG TARBALL`
+  Setup a new working directory for the given patch
+
 `-b, --build`
   Build RPM and tarball
 
+`-u, --update`
+  Update the working directory with the latest sources (needs a working SSH
+  connection for all sources except OpenRepos)
+
+`-f, --force`
+  skip some safety checks
+
 `-p, --publish-ssh`
-  Publish and install patch on your device via ssh
+  Publish and install patch on your device via SSH
 
 `-Po, --publish-openrepos`
-  Wizard for publishing in OpenRepos
+  Wizard for publishing in OpenRepos.
+  (When given 'latest' as argument to `-Po`, the wizard will provide info for updating the entry.)
 
 `-Pm, --publish-patchmanager`
-  Wizard for publishing in PM's online catalogue
+  Wizard for publishing in PM's online catalogue. (See -Po for more details.)
+
+`-S, --optimize-screenshots [ROUNDS]`
+  Optimize PNG screenshot files of the current project. Optionally specify number
+  of processing rounds for best result (default: 1).
+
+### Debug Options
+`-g, --use-git-apply`
+  Use git-apply(1) instead of patch(1) for applying the patch (see `-i` and `-u`)
+
+`-eC, --export-config`
+  Export CONFIG template
+
+`-eL, --export-license`
+  Export COPYING template
+
+`-eG, --export-gitignore`
+  Export .gitignore template
+
+`-eI, --export-icon`
+  Export OpenRepos icon template
+
+`-eJ, --export-json`
+  Export patch.json template
+
+`-eS, --export-spec`
+  Export RPM spec-file template
 
 ### General Information
 `-h, --help`
@@ -140,7 +178,7 @@ For this, `md2man` can be used, or any other tool at your liking. Then copy
 the generated manual page to your local manual directory. Usually something
 like the below should do the job:
 
-    md2man-roff README.md | gzip -c - > "sailfish-patch.1.gz"
+    md2man-roff MANPAGE.md | gzip -c - > "sailfish-patch.1.gz"
     sudo cp "sailfish-patch.1.gz" "/usr/local/man/man1/sailfish-patch.1.gz"
 
 ### Notes
