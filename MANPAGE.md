@@ -152,8 +152,7 @@ Install it via
 or grab the source from <https://github.com/sunaku/md2man>.
 
 ## DEPENDENCIES
-`sailfish-patch` internally depends on the following external programs, scripts, and/or
-libraries. Make sure they are all installed and setup correctly.
+`sailfish-patch` is written purely in `bash` but has the following dependencies:
 
 - patch
 - git
@@ -167,13 +166,13 @@ libraries. Make sure they are all installed and setup correctly.
 - cpio
 - tar
 - hxselect
-- hxnormalize
+- hxnormalize (from package html-xml-utils)
 - du
 - numfmt
-- html2text
+- html2text (from package python3-html2text)
 - pngcrush
 - pngquant
-- convert
+- convert (from package imagemagick)
 
 ## AUTHOR
 Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman.
