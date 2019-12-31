@@ -42,6 +42,10 @@ if [[ -z "$SF_PATCH_REMOTE_PATH" ]]; then
     SF_PATCH_REMOTE_PATH="/home/nemo"
 fi
 
+if [[ -z "$SF_PATCH_GLOBAL_DEFAULTS" ]]; then
+    SF_PATCH_GLOBAL_DEFAULTS="$HOME/.config/sailfish-patch.conf"
+fi
+
 dependencies() { # 1: echo/no-echo
     local ret=0
     local print=
@@ -144,6 +148,8 @@ Environment:
         SF_PATCH_SSH_TARGET=$SF_PATCH_SSH_TARGET
     - path to a directory where patch RPMs will be stored on your device
         SF_PATCH_REMOTE_PATH=$SF_PATCH_REMOTE_PATH
+    - path to the global configuration file
+        SF_PATCH_GLOBAL_DEFAULTS=$SF_PATCH_GLOBAL_DEFAULTS
 "
 }
 
@@ -308,7 +314,7 @@ check_versions="1.1.9.30
 3.2.0.12
 3.2.1.20"
 
-declare -A check_defaults=(
+declare -A check_default_dummies=(
 [SourcePackages]="username:source-package-from-openrepos <= 1.0.10|source-package-from-official-repo"
 [Prefix]=""
 [DisplayName]="Pretty Name"
@@ -331,6 +337,36 @@ declare -A check_defaults=(
 [Changelog]=""
 )
 
+declare -A default_config_values=(
+[SourcePackages]="m@dummy"
+[Prefix]="s@/usr/share"
+[DisplayName]="s@dummy"
+[PackageName]="s@dummy"
+[Category]="s@Others"
+[Keywords]="m@Patch"
+[Maintainer]="s@dummy"
+[Summary]="s@dummy"
+[Description]="m@dummy"
+[DiscussionLink]="s@dummy"
+[DonationsLink]="s@dummy"
+[SourcesLink]="s@dummy"
+[Version]="s@X.Y.Z"
+[Release]="s@N"
+[Requires]="m@sailfish-version >= 3.0.0|${check_default_dummies[Requires]}"
+[Conflicts]="m@dummy"
+[Obsoletes]="m@dummy"
+[Screenshots]="m@screenshot-1.png|/home/user/screen-2.png|path/relative/to/config/file/location/screen-3.png"
+[CompatibleVersions]="m@$(echo -n "$check_versions" | sort -V | tr '\n' '|' | sed 's/|$//')"
+[Changelog]="m@1.0.0 ($(date +%F)):|- initial public release"
+)
+
+check_allowed_in_global_config="Prefix
+Maintainer
+DiscussionLink
+DonationsLink
+SourcesLink
+Release"
+
 trim() {
     local var="$*"
     var="${var#"${var%%[![:space:]]*}"}"
@@ -351,7 +387,7 @@ if [[ "$check_config" == true ]]; then
     fi
 
     # check keys and references, files, screenshots
-    __check_default_value() { # 1: key, 2: value to check, 3: line
+    __check_dummy_value() { # 1: key, 2: value to check, 3: line
         local key="$1"
         local value="$2"
         local line="$3"
@@ -365,9 +401,9 @@ if [[ "$check_config" == true ]]; then
             return 1
         fi
 
-        if [[ -z "${check_defaults[$key]}" ]]; then
+        if [[ -z "${check_default_dummies[$key]}" ]]; then
             return 0
-        elif echo "${check_defaults[$key]}" | sed 's/|/\n/g' |\
+        elif echo "${check_default_dummies[$key]}" | sed 's/|/\n/g' |\
                 grep -Pqoe "^$(echo "$value" | sed 's/[][\.|$(){}?+*^]/\\&/g')"; then
             echo "error: field '$key' still contains a dummy value (line $line)"
             return 1
@@ -437,7 +473,7 @@ if [[ "$check_config" == true ]]; then
             fi
             # END value checks for multi line fields
 
-            if ! __check_default_value "$is_multiline" "$value" "$count"; then
+            if ! __check_dummy_value "$is_multiline" "$value" "$count"; then
                 error=true
             fi
 
@@ -504,7 +540,7 @@ if [[ "$check_config" == true ]]; then
                 elif echo "$value" | grep -Pqoe "^[-_]"; then
                     echo "error: package name must not start with '-' or '_' (line $count)" >/dev/stderr
                     error=true
-                elif [[ "$value" == "${check_defaults[$key]}" ]]; then
+                elif [[ "$value" == "${check_default_dummies[$key]}" ]]; then
                     echo "error: package name not set (line $count)" >/dev/stderr
                     error=true
                 fi
@@ -569,7 +605,7 @@ if [[ "$check_config" == true ]]; then
             esac
         fi
 
-        if ! __check_default_value "$key" "$value" "$count"; then
+        if ! __check_dummy_value "$key" "$value" "$count"; then
             error=true
         fi
 
@@ -627,7 +663,7 @@ __save_template_config() { # 1: output file
 # Fields:
 # - one line: Prefix, DisplayName, PackageName, Category,
 #             Maintainer, Summary, DiscussionLink, DonationsLink,
-#             SourcesLink, Version
+#             SourcesLink, Version, Release
 # - multiple lines: Keywords, Description, Screenshots,
 #             CompatibleVersions, Changelog, Requires,
 #             Obsoletes, Conflicts
@@ -635,13 +671,12 @@ __save_template_config() { # 1: output file
 #
 
 SourcePackages:
-- username:source-package-from-openrepos <= 1.0.10
-- source-package-from-official-repo
+$(__get_default_config "SourcePackages")
 
-Prefix: /usr/share
-DisplayName: Pretty Name
-PackageName: sfos-patch-category-name
-Category: Others
+Prefix: $(__get_default_config "Prefix")
+DisplayName: $(__get_default_config "DisplayName")
+PackageName: $(__get_default_config "PackageName")
+Category: $(__get_default_config "Category")
 # Category must be one of:
 #     Homescreen
 #     Browser
@@ -659,43 +694,37 @@ Category: Others
 #     Keyboard
 #     Others
 Keywords:
-- Patch
+$(__get_default_config "Keywords")
 
-Maintainer: username
-Summary: short summary for package managers
+Maintainer: $(__get_default_config "Maintainer")
+Summary: $(__get_default_config "Summary")
 Description:
-- long description for the store
-- possibly spanning over multiple lines
+$(__get_default_config "Description")
 
-DiscussionLink: https://example.org/discussion
-DonationsLink: https://example.org/donations
-SourcesLink: https://example.org/sources
+DiscussionLink: $(__get_default_config "DiscussionLink")
+DonationsLink: $(__get_default_config "DonationsLink")
+SourcesLink: $(__get_default_config "SourcesLink")
 
-Version: X.Y.Z
-Release: N
+Version: $(__get_default_config "Version")
+Release: $(__get_default_config "Release")
 
 Requires:
-- sailfish-version >= 3.0.0
-- another-required-package
+$(__get_default_config "Requires")
 
 Conflicts:
-- my-conflicting-package = 0.0.1
-- the-old-name
+$(__get_default_config "Conflicts")
 
 Obsoletes:
-- the-other-old-name
+$(__get_default_config "Obsoletes")
 
 Screenshots:
-- screenshot-1.png
-- /home/user/screen-2.png
-- path/relative/to/config/file/location/screen-3.png
+$(__get_default_config "Screenshots")
 
 CompatibleVersions:
-$(echo "$check_versions" | sort -V | sed 's/^/- /g')
+$(__get_default_config "CompatibleVersions")
 
 Changelog:
-- 1.0.0 ($(date +%F)):
-- - initial public release
+$(__get_default_config "Changelog")
 
 # kate: syntax SailfishOS Patch
 EOF
@@ -1155,6 +1184,74 @@ require_config() { # 1: expected config file location
     fi
 
     return 0
+}
+
+# NOTE place above __save_template_config?
+require_global_config() {
+    if [[ -z "$SF_PATCH_GLOBAL_DEFAULTS" ]]; then
+        echo "internal error: \$SF_PATCH_GLOBAL_DEFAULTS is empty" >/dev/stderr
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$SF_PATCH_GLOBAL_DEFAULTS")"
+
+    if [[ ! -f "$SF_PATCH_GLOBAL_DEFAULTS" ]]; then
+        cat <<EOF > "$SF_PATCH_GLOBAL_DEFAULTS"
+# Default configuration values for sailfish-patch
+#
+# The values configured here will be used as default values in new
+# CONFIG files generated by sailfish-patch. They have no effect for already
+# existing files.
+#
+# Only the following (single-line) fields can be configured here:
+$(echo -n "$check_allowed_in_global_config" | tr '\n' ' ' | sed 's/^/# /g;s/ $//;')
+#
+# Lines starting with '#' will be ignored.
+# Entry lines are key-value pairs joined by ':' (one entry per line).
+
+# Release: 1
+# Prefix: /usr/share
+# Maintainer: Foo Bar
+# DiscussionLink: https://discuss.example.org/foobar
+# DonationsLink: https://donate.example.org/foobar
+# SourcesLink: https://sources.example.org/foobar
+
+# [keep this line: sailfish-patch 2.0.0 (2019-07-05)]
+EOF
+    fi
+}
+
+# return the default configuration value for field $1
+# The function takes globally configured defaults into account and returns,
+# if available, the global value or else the dummy value.
+# NOTE place above __save_template_config?
+__get_default_config() { # 1: field/key
+    require_global_config || exit 1
+    [[ -z "$1" ]] && return 1
+
+    if echo -n "$check_allowed_in_global_config" | grep -Pqoe "^$1$" && grep -Pqoe "^$1:" "$SF_PATCH_GLOBAL_DEFAULTS"; then
+        value="$(grep -Pe "^$1:" "$SF_PATCH_GLOBAL_DEFAULTS" | cut -d\: -f2-)"
+        value="$(trim "$value")"
+        echo "$value"
+    elif [[ -n "${default_config_values[$1]}" ]]; then
+        value="${default_config_values[$1]}"
+        type="${value%%@*}"
+
+        if [[ "$value" == [ms]"@dummy" ]]; then
+            value="${check_default_dummies[$1]}"
+        else
+            value="${value#*@}"
+        fi
+
+        if [[ "$type" == m ]]; then
+            echo "$value" | sed 's/^/- /;s/|/\n- /g'
+        else
+            echo "$value"
+        fi
+    else
+        echo "error: default value for invalid key requested ($1)" >/dev/stderr
+        return 1
+    fi
 }
 
 # return unchecked base config path to be used

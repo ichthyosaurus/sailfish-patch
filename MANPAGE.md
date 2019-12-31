@@ -85,6 +85,12 @@ definition file provided with this script in the following directory:
 
     $HOME/.local/share/org.kde.syntax-highlighting/syntax/
 
+Some default values can be configured in the file defined by `SF_PATCH_GLOBAL_DEFAULTS`.
+An example file will be created if no configuration file is present.
+The value of `SF_PATCH_GLOBAL_DEFAULTS` defaults to:
+
+    $HOME/.config/sailfish-patch.conf
+
 ## ENVIRONMENT
 
 `SF_PATCH_PASSFILE`
@@ -96,14 +102,23 @@ definition file provided with this script in the following directory:
 `SF_PATCH_REMOTE_PATH`
   Path to a directory where patch RPMs will be stored on your device
 
+`SF_PATCH_GLOBAL_DEFAULTS`
+  Path to the global configuration file for some default values used in new
+  patch config files
+
 ## ADDING NEW CONFIGURATION FIELDS
 
 To add a new configuration field, you have to update the following places:
 
-- check_defaults array with default dummy value (if necessary)
+- `check_default_dummies` array with default dummy value (if necessary)
+- `default_config_values` array with default configuration values
+  - prefix 's@' for single-line fields and 'm@' for multi-line fields
+  - use '[sm]@dummy' to use the dummy value as default value
 - add the field to the list of required fields
 - and to the single line or multi line check switches
 - add the field to all wizards where it is needed
+- is necessary: add the field to `check_allowed_in_global_config`
+- add the field to the config file template in `__save_template_config`
 - update the Kate syntax file
 
 ## EXIT STATUS
