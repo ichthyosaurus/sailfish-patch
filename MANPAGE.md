@@ -79,6 +79,7 @@ Tips:
 ## CONFIGURATION FILES
 
 Read the sample configuration file provided with this script for detailed documentation.
+It can be exported using `sailfish-patch -eC`.
 
 To enable syntax highlighting in KDE's text editor Kate put the syntax highlighting
 definition file provided with this script in the following directory:
