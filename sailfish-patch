@@ -282,6 +282,9 @@ Settings
 Keyboard
 Others"
 
+# a list of all Sailfish versions supported by patchmanager
+# (taken from: https://coderus.openrepos.net/pm2/project/.../edit)
+# note: this list differs from the one at https://coderus.openrepos.net/whitesoft/sailversion
 check_versions="1.1.9.30
 2.0.2.51
 2.0.4.14
@@ -312,7 +315,8 @@ check_versions="1.1.9.30
 3.0.3.10
 3.1.0.11
 3.2.0.12
-3.2.1.20"
+3.2.1.20
+3.3.0.14"
 
 declare -A check_default_dummies=(
 [SourcePackages]="username:source-package-from-openrepos <= 1.0.10|source-package-from-official-repo"
