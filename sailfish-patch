@@ -131,7 +131,10 @@ Arguments:
     -V, --version               - show version and license information
     -h, --help                  - show this help and exit
 
-Debug Options:
+Debug/Development Options:
+    -R, --check-releases        - load a list of SailfishOS releases from the Internet
+                                  and compare it to the list of versions currently supported
+                                  by this script
     -g, --use-git-apply         - use git-apply(1) instead of patch(1) for applying
                                   the patch (see -i and -u)
     -eC, --export-config        - export CONFIG template
@@ -253,6 +256,7 @@ while [[ $# > 0 ]]; do
                 shift
             fi
         ;;
+        -R|--check-releases) list_releases=true;;
         -g|--use-git-apply) patch_utility=git;;
         -eC|--export-config   ) debug_export_template+=(config);;
         -eL|--export-license  ) debug_export_template+=(license);;
@@ -283,7 +287,7 @@ Keyboard
 Others"
 
 # a list of all Sailfish versions supported by patchmanager
-# (taken from: https://coderus.openrepos.net/pm2/project/.../edit)
+# (taken from: https://coderus.openrepos.net/pm2/upload/)
 # note: this list differs from the one at https://coderus.openrepos.net/whitesoft/sailversion
 check_versions="1.1.9.30
 2.0.2.51
@@ -384,6 +388,60 @@ select_range() { # 1: from pattern, 2: to pattern
     [[ -z "$2" ]] && return 1 || local to_pattern="$2"
     awk "/$from_pattern/{flag=1;next}/$to_pattern/{flag=0}flag"
 }
+
+
+if [[ "$list_releases" == true ]]; then
+    # a list of all Sailfish versions supported by patchmanager
+    # (taken from: https://coderus.openrepos.net/pm2/upload/)
+    # note: this list differs from the one at https://coderus.openrepos.net/whitesoft/sailversion
+
+    which "curl" 2> /dev/null >&2 && _have_curl=true
+    which "column" 2> /dev/null >&2 && _have_column=true
+
+    if [[ "$_have_curl" != true ]]; then
+        echo "error: 'curl' is not available, cannot retrieve list of all SailfishOS releases" >/dev/stderr
+        error=true
+    else
+        if ! _all_releases="$(curl -sS https://coderus.openrepos.net/whitesoft/sailversion)"; then
+            echo "error: failed to load the list of all releases from https://coderus.openrepos.net/whitesoft/sailversion" >/dev/stderr
+            error=true
+        else
+            _head_line="Script?;Version;Codename;Date"
+             _sep_line="-------;-------;--------;----"
+
+            if [[ "$_have_column" == true ]]; then
+                # print formatted
+                join -t';' -a 1 -a 2 -j 1 -o 1.2,2.1,2.2,2.3 \
+                    <(echo "$check_versions" | sed 's/$/;  yes/g' | sort) <(echo "$_all_releases" | sed 's/ - /;/g' | sort) |\
+                        sed "1 s/^/$_head_line\n$_sep_line\n/; $ s/$/\n$_sep_line\n$_head_line/" |\
+                        sed 's/^;/ ;/g' | column -s ';' -t
+            else
+                # print unformatted
+                echo "note: install 'column' to get formatted output" >/dev/stderr
+                join -t',' -a 1 -a 2 -j 1 -o 1.2,2.1,2.2,2.3 \
+                    <(echo "$check_versions" | sed 's/$/,yes/g' | sort) <(cho "$_all_releases" | sed 's/ - /,/g' | sort)  |\
+                        sed "1 s/^/$_head_line\n/;"
+            fi
+
+            echo "
+This script only supports SailfishOS releases supported by Patchmanager.
+If a version is not marked with 'yes' in the listing above, make sure it is
+supported by cross-checking https://coderus.openrepos.net/pm2/upload/. Then
+add it to the list of supported versions by updating variable '\$check_versions'
+and create a pull request at https://github.com/ichthyosaurus/sailfish-patch."
+        fi
+    fi
+
+    if [[ "$error" == true ]]; then
+        echo -e "\nReleases supported by this script:"
+        echo      "----------------------------------"
+        echo "$check_versions"
+        exit 1
+    fi
+
+    exit 0
+fi
+
 
 if [[ "$check_config" == true ]]; then
     if [[ ! -f "$check_config_name" ]]; then
