@@ -112,6 +112,8 @@ Usage:
 Arguments:
     -c, --create NAME           - create new patch skeleton in NAME
     -C, --check-config FILE     - validate config file FILE
+    -Cu, --config-update FILE   - same as -C, but update sections automatically
+                                  (e.g. add new releases to the CompatibleVersions section)
     -i, --import CONFIG TARBALL - setup a new working directory for the given patch
     -b, --build                 - build RPM and tarball
     -u, --update                - update the working directory with the
@@ -158,6 +160,7 @@ Environment:
 
 check_config=false
 check_config_name=
+check_update_config=false
 create_new=false
 create_new_name=
 build=false
@@ -172,6 +175,7 @@ publish_via_ssh=false
 publish_to_openrepos=false
 publish_to_pm_catalogue=false
 publish_update_only=false
+list_releases=false
 force=false
 patch_utility=patch
 debug_export_template=()
@@ -182,6 +186,18 @@ while [[ $# > 0 ]]; do
         --version|-V) version; exit 0;;
         -C|--check-config)
             check_config=true
+            shift
+
+            if [[ -z "$1" ]]; then
+                echo "error: no config file name given" >/dev/stderr
+                exit 2
+            else
+                check_config_name="$1"
+            fi
+        ;;
+        -Cu|--config-update)
+            check_config=true
+            check_update_config=true
             shift
 
             if [[ -z "$1" ]]; then
@@ -705,8 +721,22 @@ if [[ "$check_config" == true ]]; then
 
     if [[ -n "$upstream_more_recent" ]]; then
         echo "note: there are newer releases for this major SailfishOS version available" >/dev/stderr
-        echo "      if the patch is compatible, consider updating the CompatibleVersions section" >/dev/stderr
         echo -n "$upstream_more_recent" | sed 's/^/- /g' | tee /dev/stderr | xclip -selection c && echo >/dev/stderr
+
+        if [[ "$check_update_config" == true ]]; then
+            latest_version_line="$(sed 's/^\s*//g' "$check_config_name" | # remove leading whitespace
+                awk '/^CompatibleVersions:$/{flag=1;next}/^[^-# ]/{flag=0} { if (flag && $0 != "") print NR; }' | # print lines in 'CompatibleVersions:'
+                tail -1)" # get the last line number
+            update_config_name="$(mktemp)"
+            cp "$check_config_name" "$update_config_name"
+            update_to_add="$(echo -n "$upstream_more_recent" | sed 's/^/- /g;s/$/\\n/g' | tr -d '\n')"
+            sed -i "$latest_version_line s/$/\n$update_to_add/;" "$update_config_name"
+            mv "$update_config_name" "$check_config_name" --backup=t
+            echo "note: the CompatibleVersions section has been updated"
+            echo "note: please check if the patch really is compatible with the new releases"
+        else
+            echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >/dev/stderr
+        fi
     fi
 
     if [[ "$error" == true ]]; then
