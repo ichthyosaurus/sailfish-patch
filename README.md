@@ -38,7 +38,7 @@ See `MANPAGE.md` for more information.
 
 `sailfish-patch` is written purely in `bash` but has the following dependencies:
 
-    patch git scp ssh sed xclip
+    patch git scp ssh sshpass sed xclip
     rpm rpmbuild rpm2cpio cpio tar
     hxselect hxnormalize (from package html-xml-utils)
     du numfmt

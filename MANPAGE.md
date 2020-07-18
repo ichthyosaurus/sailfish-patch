@@ -197,6 +197,7 @@ or grab the source from <https://github.com/sunaku/md2man>.
 - git
 - scp
 - ssh
+- sshpass
 - sed
 - xclip
 - rpm
