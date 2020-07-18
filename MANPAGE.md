@@ -136,7 +136,7 @@ The value of `SF_PATCH_GLOBAL_DEFAULTS` defaults to:
   Path to a local file containing your devel-su passphrase
 
 `SF_PATCH_SSH_TARGET`
-  How to connect to your device via ssh (config name or IP)
+  How to connect to your device via ssh (config name or IP, include username)
 
 `SF_PATCH_REMOTE_PATH`
   Path to a directory where patch RPMs will be stored on your device

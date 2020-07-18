@@ -21,6 +21,7 @@ that this is not yet supported for RPMs.
 
 Tips:
 
+- Set the enviroment variables from the manpage to configure the ssh connection to your device.
 - Use `rpm -qf /path/to/file` to find out which package a file belongs to.
 - Use `pkcon get-details packagename` to check which version is installed.
 - Use `sailfish-patch -b -p` to test the patch directly after building (needs ssh).
