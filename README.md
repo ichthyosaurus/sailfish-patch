@@ -44,6 +44,15 @@ See `MANPAGE.md` for more information.
     html2text (from package python3-html2text)
     pngcrush pngquant convert (from package imagemagick)
 
+## Installation in a virtual machine
+
+On non-debian based distros, its easier to use a virtual machine to run the sailfish-patch utility.
+Install [vagrant](https://www.vagrantup.com/) and choose a provider, for example virtualbox (and maybe the vbguest plugin with `vagrant plugin install vagrant-vbguest`).
+
+You can now setup a virtual machine by running `vagrant up` in the `vagrant` folder.
+SSH into the virtual machine with `vagrant ssh`, you find the synced folder under `/vagrant` which is one level above the folder of `sailfish-patch`.
+(The synced folder can be changed in `vagrant/Vagrantfile`)
+
 # License
 
 `sailfish-patch 2.0.0 (2019-07-05)`
