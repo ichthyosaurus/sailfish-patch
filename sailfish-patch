@@ -266,21 +266,21 @@ while [[ $# > 0 ]]; do
     shift
 done
 
-check_categories="Homescreen
-Browser
-Camera
-Calendar
-Clock
-Contacts
-Email
-Gallery
-Media
-Messages
-Phone
-Silica
-Settings
-Keyboard
-Others"
+check_categories="homescreen
+browser
+camera
+calendar
+clock
+contacts
+email
+gallery
+media
+messages
+phone
+silica
+settings
+keyboard
+others"
 
 # a list of all Sailfish versions supported by patchmanager
 # (taken from: https://coderus.openrepos.net/pm2/project/.../edit)
@@ -1363,8 +1363,8 @@ __create_diff() { # 1: config, 2: save path
     git diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" |\
         sed -Ee "s@(--git|---|\+\+\+) (\"?)(a|b)${prefix}(${original#/}|${patched#/})/@\1 \2\3${prefix}@g;
                     s@(--git a/.*) (\"?)b${prefix}${patched#/}/@\1 \2b${prefix}@g;
-                        s@(---|\+\+\+) (.*?)\t@\1 \2@g;" > "$2"
-
+                       s@(---|\+\+\+) (.*?)\t@\1 \2@g;" > "$2"
+    
     if [[ -n "$old_setting" ]]; then
         git config core.quotepath "$(old_setting)"
     else
@@ -1588,7 +1588,11 @@ else
 
                 remote_temp_dir="/tmp/sailfish-patch.tmp"
                 echo "downloading packages on remote device"
+<<<<<<< HEAD
                  sshpass -f "$SF_PATCH_PASSFILE" ssh "$SF_PATCH_SSH_TARGET" "rm -rf '$remote_temp_dir';\
+=======
+               sshpass -f "$SF_PATCH_PASSFILE"  ssh  "$SF_PATCH_SSH_TARGET" "rm -rf '$remote_temp_dir';\
+>>>>>>> 4b7d420... using sshpass for scp and ssh connections now, only enter pw once for installation
                                             mkdir -p '$remote_temp_dir' &&\
                                             pkcon download '$remote_temp_dir' '$source'"
 
@@ -2082,10 +2086,15 @@ else
 
         echo "pushing rpm to device"
         sshpass -f "$SF_PATCH_PASSFILE"  scp "$rpm" "$SF_PATCH_SSH_TARGET":"$SF_PATCH_REMOTE_PATH"
+<<<<<<< HEAD
          echo "installing rpm"
         sshpass -f "$SF_PATCH_PASSFILE"  ssh "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -u '$package_name'"
         sshpass -f "$SF_PATCH_PASSFILE"  ssh "$SF_PATCH_SSH_TARGET" "devel-su pkcon -y install-local '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"
         sshpass -f "$SF_PATCH_PASSFILE"  ssh "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"
+=======
+        echo "installing rpm. Please provide credentials for installing the package."
+        sshpass -f "$SF_PATCH_PASSFILE"  ssh "$SF_PATCH_SSH_TARGET" "devel-su bash -c \"/usr/sbin/patchmanager -u '$package_name' && pkcon -y install-local '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")' &&  /usr/sbin/patchmanager -a '$package_name'\""
+>>>>>>> 4b7d420... using sshpass for scp and ssh connections now, only enter pw once for installation
 
         echo "patch deployed"
     fi
