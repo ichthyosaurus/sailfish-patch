@@ -2393,13 +2393,12 @@ $update_changelog"
 fi
 
 if (( ${#debug_export_template[@]} > 0 )); then
-    __save_file() { # 1: base name, 2: extension
-        local n="$1?.$2"; if [[ -z "$2" ]]; then n="$1?"; fi
-        if [[ -f "${n//\?/}" ]]; then
-            mktemp -p . "${n//\?/_XXXX}"
-        else
-            echo "${n//\?/}"
+    __save_file() { # 1: file name
+        if [[ -f "$1" ]]; then  # make sure we don't overwrite anything
+            file_temp="$(mktemp -p . sailfish-patch-XXXX.tmp)"
+            mv --backup=t -T "$file_temp" "$1" && rm "$1"
         fi
+        echo "$1"
     }
 
     for i in "${debug_export_template[@]}"; do
@@ -2407,9 +2406,9 @@ if (( ${#debug_export_template[@]} > 0 )); then
             config) __save_template_config "$(__save_file "$i")";;
             license) __save_template_copying "$(__save_file "$i")";;
             gitignore) __save_template_gitignore "$(__save_file ".$i")";;
-            icon) __save_template_icon "$(__save_file "$i" "png")";;
-            json) __save_template_json "$(__save_file "$i" "json")";;
-            spec) __save_template_spec "$(__save_file "$i" "spec")";;
+            icon) __save_template_icon "$(__save_file "$i.png")";;
+            json) __save_template_json "$(__save_file "$i.json")";;
+            spec) __save_template_spec "$(__save_file "$i.spec")";;
         esac
     done
 fi
