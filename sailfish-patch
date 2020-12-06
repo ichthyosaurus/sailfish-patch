@@ -2406,7 +2406,7 @@ if (( ${#debug_export_template[@]} > 0 )); then
         case "$i" in
             config) __save_template_config "$(__save_file "$i")";;
             license) __save_template_copying "$(__save_file "$i")";;
-            gitignore) __save_template_gitignore "$(__save_file "$i")";;
+            gitignore) __save_template_gitignore "$(__save_file ".$i")";;
             icon) __save_template_icon "$(__save_file "$i" "png")";;
             json) __save_template_json "$(__save_file "$i" "json")";;
             spec) __save_template_spec "$(__save_file "$i" "spec")";;
