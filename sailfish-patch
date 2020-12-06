@@ -1932,15 +1932,15 @@ else
             #       - unified_diff.patch is missing
 
             if [[ "$needs_sources" == true ]] && [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
-                rm -r "$original"  # empty
+                rm -rf "$original"  # empty
             fi
 
             if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$patched"/* )" ]]; then
-                rm -r "$patched"  # empty
+                rm -rf "$patched"  # empty
             fi
 
             type=update
-            latest_commit="$(git rev-parse --verify --short HEAD)"
+            latest_commit="$(git rev-parse --verify --short HEAD 2>/dev/null || echo -n "no-git")"
             diff_file="diff_original_${latest_commit}.patch"
             updated_diff="diff_updated_${latest_commit}.patch"
             working_diff="diff_applying.patch"  # same as $tmp_diff in __update_apply_diff!
