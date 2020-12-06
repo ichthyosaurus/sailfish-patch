@@ -1853,13 +1853,15 @@ else
         original="$(__get_original_path)"
         patched="$(__get_patched_path)"
 
-        if [[ -n "$(git status --porcelain)" ]]; then
-            if [[ "$force" == true ]]; then
-                echo "warning: there are uncommitted changes"
-            else
-                echo "error: there are uncommitted changes" >/dev/stderr
-                exit 1
-            fi
+        # We only allow changed or untracked files that are not in the original/ or patched/ directories.
+        if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^.. (original|patched)\//!d; /^\?\? /d' | tr '\0' '.')" ]]; then
+            tmp_msg="uncommitted source changes found, check original/ and patched/"
+            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >/dev/stderr; exit 1; }
+        fi
+
+        if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^\?\? (original|patched)\//!d' | tr '\0' '.')" ]]; then
+            tmp_msg="untracked source files found, check original/ and patched/"
+            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >/dev/stderr; exit 1; }
         fi
 
         require_config "$(__get_config_path)" || exit 1
