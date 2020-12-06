@@ -1794,12 +1794,23 @@ else
         local original="$(__get_original_path)"
         local patched="$(__get_patched_path)"
         local prefix="$(get_single_config "$(__get_config_path)" "Prefix" "/")"
-        local tmp_diff="$(mktemp -p . update_diff_XXXX.patch)"
+        local tmp_diff="diff_applying.patch"
+        local patch_command_file="diff_apply_command.sh"
 
-        if ! cp -r "$original" "$original.tmp"; then
-            echo "error: failed to create temporary copy of pre-patched original files" >/dev/stderr
+        local original_backup="$original.tmp"
+        local patched_backup="$patched.tmp"
+
+        cp -r "$original" "$original_backup" && cp -r "$patched" "$patched_backup" || {
+            echo "fatal: failed to create temporary copy of pre-patched files" >/dev/stderr
+            echo "error: manual cleanup required" >/dev/stderr
             return 1
-        fi
+        }
+
+        __update_apply_diff_rollback() {
+            rm -rf "$original" "$patched"
+            mv "$original_backup" "$original"
+            mv "$patched_backup" "$patched"
+        }
 
         if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
             prefix="$prefix/"
@@ -1807,38 +1818,40 @@ else
 
         sed "$1" -Ee "s@(--git|---|\+\+\+) a${prefix}@\1 a${original}/@g;
                    s@(--git|---|\+\+\+) b${prefix}@\1 b${patched}/@g;
-                   s@(--git a/.*) b${prefix}@\1 b${patched}/@g" > "$tmp_diff" || return 1
+                   s@(--git a/.*) b${prefix}@\1 b${patched}/@g" > "$tmp_diff" || {
+            echo "error: failed to update diff paths" >/dev/stderr
+            __update_apply_diff_rollback
+            return 1
+        }
 
         strip="$(pwd)"
         strip="${strip%/}/"
         strip="$(echo "$strip" | grep -oe "/" | wc -l)"
 
+        local failed=false
         if [[ "$patch_utility" == "git" ]]; then
             if ! git apply --reject --binary -p "$strip" -v "$tmp_diff"; then
                 echo "error: failed to apply diff" >/dev/stderr
-                return 1
+                echo -n "patch command: "
+                echo "git apply --reject --binary -p '$strip' -v '$tmp_diff'" | tee "$patch_command_file"
+                failed=true
             fi
         elif [[ "$patch_utility" == "patch" ]]; then
             if ! patch -p"$strip" -u <"$tmp_diff"; then
                 echo "error: failed to apply diff" >/dev/stderr
-                return 1
+                echo -n "patch command: "
+                echo "patch -p'$strip' -u <'$tmp_diff'" | tee "$patch_command_file"
+                failed=true
             fi
         else
             echo "internal error: unknown patch utility '$patch_utility'" >/dev/stderr
-            return 1
+            failed=true
         fi
 
-        if [[ ! -d "$original.tmp" ]]; then
-            echo "error: could not find temporary copy of original files" >/dev/stderr
-            return 1
-        fi
+        [[ "$failed" == true ]] && __update_apply_diff_rollback && return 1
 
-        if ! rm -rf "$original"; then
-            echo "error: failed to remove stale original sources" >/dev/stderr
-            return 1
-        fi
-
-        mv "$original.tmp" "$original"
+        rm -rf "$original" && mv "$original_backup" "$original"
+        rm -rf "$patched_backup"
         rm "$tmp_diff"
     }
 
@@ -1903,69 +1916,135 @@ else
 
         readarray -t sources <<<"$(get_multi_config "$(__get_config_path)" "SourcePackages" "")"
 
+        needs_sources=true
         if (( ${#sources[@]} == 1 )) && [[ -z "$(trim "${sources[0]}")" ]]; then
             if [[ -d "$original" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
-                echo "warning: no source packages specified but original source files found"
-            fi
-
-            echo "no source packages specified: automatic update is not possible"
-        else
-            if [[ ! -d "$original" || ! -d "$patched" ]]; then
-                if [[ -f "unified_diff.patch" ]]; then
-                    echo "note: running initial distribution update"
-                    initial_dist_update=true
-                    initial_dist_diff="unified_diff.patch"
-                    mkdir -p "$original" "$patched" "$(__get_build_path)"
-                else
-                    echo "error: make sure the following directories exists:" >/dev/stderr
-                    echo "- $original" >/dev/stderr
-                    echo "- $patched" >/dev/stderr
-                    exit 1
-                fi
-            fi
-
-            have_original=true
-            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
-                echo "warning: there are no original files"
-                have_original=false
-            fi
-
-            have_patched=true
-            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$patched"/* )" ]]; then
-                echo "warning: there are no patched files"
-                have_patched=false
-            fi
-
-            original_updated=false
-            if [[ "$have_original" == false ]]; then
-                __update_fetch_latest_sources || exit 1
-                original_updated=true
-            fi
-
-            patched_updated=false
-            if [[ "$have_patched" == false ]]; then
-                __update_copy_sources || exit 1
-                patched_updated=true
-            fi
-
-            diff_out="$(mktemp -p . original_diff_XXXX.patch)"
-            __create_diff "$(__get_config_path)" "$diff_out"
-
-            if [[ "$original_updated" == false ]]; then
-                __update_fetch_latest_sources || exit 1
-            fi
-
-            if [[ "$patched_updated" == false ]]; then
-                __update_copy_sources || exit 1
-            fi
-
-            if [[ "$initial_dist_update" == true ]]; then
-                __update_apply_diff "$initial_dist_diff" || exit 1
-                __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
+                echo "error: no source packages specified but original source files found"
+                echo "error: automatic update not possible"
+                exit 1
             else
-                __update_apply_diff "$diff_out" || exit 1
-                rm "$diff_out"
+                echo "note: no source packages specified"
+                needs_sources=false
+                mkdir -p "$original"
             fi
+        fi
+
+        if true; then
+            # options: user wants to...
+            # 1. bootstrap a distributed patch
+            #       - unified_diff.patch exists
+            #       - all source dirs are missing
+            # 2. update sources of an existing patch
+            #       - all source dirs exist
+            # 3. bootstrap a newly created patch from its configuration
+            #       - all source dirs are missing
+            #       - unified_diff.patch is missing
+
+            if [[ "$needs_sources" == true ]] && [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
+                rm -r "$original"  # empty
+            fi
+
+            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$patched"/* )" ]]; then
+                rm -r "$patched"  # empty
+            fi
+
+            type=update
+            latest_commit="$(git rev-parse --verify --short HEAD)"
+            diff_file="diff_original_${latest_commit}.patch"
+            updated_diff="diff_updated_${latest_commit}.patch"
+            working_diff="diff_applying.patch"  # same as $tmp_diff in __update_apply_diff!
+
+            if [[ ! -d "$original" && ! -d "$patched" && ! -f "$working_diff" ]]; then
+                if [[ -f "unified_diff.patch" ]]; then
+                    echo "note: bootstrapping distribution package"
+                    diff_file="unified_diff.patch"
+                    type=dist_bootstrap
+                else
+                    echo "note: bootstrapping an empty package"
+                    type=initial_bootstrap
+                fi
+            elif [[ ! -d "$original" ]]; then
+                echo "error: original files missing" >/dev/stderr
+                exit 1
+            elif [[ ! -d "$patched" ]]; then
+                echo "error: patched files missing" >/dev/stderr
+                exit 1
+            elif [[ -f "$working_diff" ]]; then
+                type=retry
+                echo "note: automatic updating failed"
+                echo "      Make sure both source directories contain updated but unchanged sources."
+                echo "      Continue by comitting the changed files. Do not reset them if you want to continue."
+                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command."
+                echo "      If it fails again, you can checkout the updated sources and try again."
+                exit 0
+            fi
+
+            # make sure all source directories exist
+            mkdir -p "$original" "$patched" "$(__get_build_path)"
+
+            case "$type" in
+                dist_bootstrap|initial_bootstrap)
+                    if [[ "$needs_sources" == true ]]; then
+                        __update_fetch_latest_sources && __update_copy_sources || {
+                            echo "unrolling changes..."
+                            rm -rf "$original" "$patched"
+                            exit 1
+                        }
+                    fi
+
+                    [[ "$type" == dist_bootstrap ]] && { __update_apply_diff "$diff_file" || exit 1; }
+                    __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
+                ;;
+                update)
+                    diff_file_temp="$(mktemp -p . "$diff_file.XXXXXX")"
+                    mv --backup=t -T "$diff_file_temp" "$diff_file"  # make sure we don't overwrite anything
+                    __create_diff "$(__get_config_path)" "$diff_file"
+
+                    original_backup="$original-old-${latest_commit}"
+                    mv --backup=t -T "$original" "$original_backup"
+                    mkdir -p "$original"
+
+                    if [[ "$needs_sources" == true ]]; then
+                        __update_fetch_latest_sources || {
+                            echo "note: unrolling changes..."
+                            rm -rf "$original" && mv -T "$original_backup" "$original"
+                            exit 1
+                        }
+                    fi
+
+                    patched_backup="$patched-old-${latest_commit}"
+                    mv --backup=t -T "$patched" "$patched_backup"
+                    mkdir -p "$patched"
+
+                    if [[ "$needs_sources" == true ]]; then
+                        __update_copy_sources || {
+                            echo "note: unrolling changes..."
+                            rm -rf "$patched" && mv -T "$patched_backup" "$patched"
+                            exit 1
+                        }
+                    fi
+
+                    __update_apply_diff "$diff_file" && rm -f "$working_diff" || {
+                        echo "note: the original patch has been saved to '$diff_file'"
+                        echo "      Both source directories now contain updated but unchanged sources."
+                        echo "      Continue by comitting the changed files. Do not reset them if you want to continue."
+                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command."
+                        echo "      If it fails again, you can checkout the updated sources and try again."
+                        exit 1
+                    }
+
+                    diff_file_temp="$(mktemp -p . "$updated_diff.XXXXXX")"
+                    mv --backup=t -T "$diff_file_temp" "$updated_diff"  # make sure we don't overwrite anything
+                    __create_diff "$(__get_config_path)" "$updated_diff"
+
+                    if diff <(sed '/^index/d' "$diff_file") <(sed '/^index/d' "$updated_diff") >/dev/null; then
+                        echo "success: old and new patch files are identical"
+                    else
+                        echo "warning: updated patch file has changed"
+                    fi
+                ;;
+                *) echo "error: invalid update type '$type'" && exit 1;;
+            esac
         fi
     fi
 
