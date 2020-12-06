@@ -1315,6 +1315,7 @@ $(echo -n "$check_allowed_in_global_config" | tr '\n' ' ' | sed 's/^/# /g;s/ $//
 # SourcesLink: https://sources.example.org/foobar
 
 # [keep this line: sailfish-patch 2.0.0 (2019-07-05)]
+# kate: syntax SailfishOS Patch
 EOF
     fi
 }
