@@ -57,7 +57,7 @@ SSH into the virtual machine with `vagrant ssh`, you find the synced folder unde
 
 `sailfish-patch 2.0.0 (2019-07-05)`
 
-Copyright (C) 2018-2019  Mirian Margiani
+Copyright (C) 2018-2020  Mirian Margiani
 
 (`sailfish-patch` was originally based on
 [`gen-sailfish-patch`](https://github.com/cornerman/gen-sailfish-patch)
