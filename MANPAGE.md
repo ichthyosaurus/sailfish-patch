@@ -14,7 +14,7 @@ sailfish-patch - Manage your SailfishOS patches
 
 `sailfish-patch` [-i CONFIG TARBALL]
 
-`sailfish-patch` [-C FILE]
+`sailfish-patch` [-C|-Cu FILE]
 
 `sailfish-patch` [-h] [-V]
 
@@ -57,6 +57,9 @@ Tips:
 `-C, --check-config FILE`
   Validate config file FILE
 
+`-Cu, --config-update FILE`
+  Same as `-C`, but update sections automatically (e.g. add new releases to the `CompatibleVersions` section)
+
 `-i, --import CONFIG TARBALL`
   Setup a new working directory for the given patch
 
@@ -68,7 +71,7 @@ Tips:
   connection for all sources except OpenRepos)
 
 `-f, --force`
-  skip some safety checks
+  Skip some safety checks
 
 `-p, --publish-ssh`
   Publish and install patch on your device via SSH
@@ -78,13 +81,16 @@ Tips:
   (When given 'latest' as argument to `-Po`, the wizard will provide info for updating the entry.)
 
 `-Pm, --publish-patchmanager`
-  Wizard for publishing in PM's online catalogue. (See -Po for more details.)
+  Wizard for publishing in PM's online catalogue. (See `-Po` for more details.)
 
 `-S, --optimize-screenshots [ROUNDS]`
   Optimize PNG screenshot files of the current project. Optionally specify number
   of processing rounds for best result (default: 1).
 
 ### Debug Options
+`-R, --check-releases`
+  Load a list of SailfishOS releases from the Internet and compare it to the list of versions currently supported
+
 `-g, --use-git-apply`
   Use git-apply(1) instead of patch(1) for applying the patch (see `-i` and `-u`)
 
@@ -159,6 +165,23 @@ To add a new configuration field, you have to update the following places:
 - is necessary: add the field to `check_allowed_in_global_config`
 - add the field to the config file template in `__save_template_config`
 - update the Kate syntax file
+
+## UPDATING LIST OF SUPPORTED VERSIONS
+
+This script only supports SailfishOS releases supported by Patchmanager.
+To update the list of supported SailfishOS versions, you have to check for new
+releases by running:
+
+    sailfish-patch -R
+
+If a version is not marked with 'yes' in the listing above, make sure it is
+supported by cross-checking the results with Patchmanager's list at:
+
+    https://coderus.openrepos.net/pm2/upload/
+
+Finally, update the variable '$check_versions' and create a pull request at:
+
+    https://github.com/ichthyosaurus/sailfish-patch
 
 ## EXIT STATUS
 

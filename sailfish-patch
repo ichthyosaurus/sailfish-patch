@@ -106,7 +106,7 @@ Usage:
     $script -c NAME
     $script -u
     $script -i CONFIG TARBALL
-    $script -C FILE
+    $script [-C|-Cu] FILE
     $script [-h] [-V]
 
 Arguments:
