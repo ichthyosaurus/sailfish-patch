@@ -1983,7 +1983,23 @@ else
                         }
                     fi
 
-                    [[ "$type" == dist_bootstrap ]] && { __update_apply_diff "$diff_file" || exit 1; }
+                    if [[ "$type" == dist_bootstrap ]]; then
+                        if ! __update_apply_diff "$diff_file"; then
+                            echo "error: failed to apply patch to downloaded sources"
+                            echo "       Both source directories now contain fresh but unchanged sources."
+                            echo "       The original patch is still available in '$diff_file' and you can"
+                            echo "       try applying it manually to the files in '$patched'."
+                            exit 1
+                        else
+                            __create_diff "$(__get_config_path)" "$updated_diff"
+                            if diff <(sed '/^index/d' "$diff_file") <(sed '/^index/d' "$updated_diff") >/dev/null; then
+                                # everything worked perfectly
+                                rm "$updated_diff"
+                            else
+                                echo "warning: source patch differs from newly generated patch"
+                            fi
+                        fi
+                    fi
                     __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
                 ;;
                 update)
