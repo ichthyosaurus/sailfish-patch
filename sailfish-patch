@@ -848,8 +848,12 @@ RPMS
 .directory
 source-packages
 original.tmp
-original_diff_*.patch
-update_diff_*.patch
+diff_original_*.patch
+diff_updated_*.patch
+diff_apply_command.sh
+diff_applying.patch
+original-old-*
+patched-old-*
 build.*
 *~
 EOF
