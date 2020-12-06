@@ -726,16 +726,32 @@ if [[ "$check_config" == true ]]; then
         echo -n "$upstream_more_recent" | sed 's/^/- /g' | tee /dev/stderr | xclip -selection c && echo >/dev/stderr
 
         if [[ "$check_update_config" == true ]]; then
+            # update CompatibleVersions
             latest_version_line="$(sed 's/^\s*//g' "$check_config_name" | # remove leading whitespace
                 awk '/^CompatibleVersions:$/{flag=1;next}/^[^-# ]/{flag=0} { if (flag && $0 != "") print NR; }' | # print lines in 'CompatibleVersions:'
                 tail -1)" # get the last line number
             update_config_name="$(mktemp)"
             cp "$check_config_name" "$update_config_name"
-            update_to_add="$(echo -n "$upstream_more_recent" | sed 's/^/- /g;s/$/\\n/g' | tr -d '\n')"
+            update_to_add="$(echo -n "$upstream_more_recent" | sed 's/^/- /g;s/$/\\n/g' | tr -d $'\n')"
             sed -i "$latest_version_line s/$/\n$update_to_add/;" "$update_config_name"
             mv "$update_config_name" "$check_config_name" --backup=t
             echo "note: the CompatibleVersions section has been updated"
             echo "note: please check if the patch really is compatible with the new releases"
+
+            # update version and changelog for new releases
+            check_update_version=true  # NOTE it might be useful to make this optional
+            if [[ "$check_update_version" == true ]]; then
+                current_version="$(grep "^Version: " "$check_config_name" | head -1 | cut -d' ' -f2)"
+                next_version="$(echo "$current_version" | cut -d. -f1-2).$(echo "$current_version+1" | cut -d. -f3 | bc)"
+                sed -i "s/^Version: .*$/Version: $next_version/" "$check_config_name"
+
+                last_compatible="$(echo -n "$upstream_more_recent" | tail -1)"
+                sed -i "s/^Changelog:$/Changelog:\n\
+- $next_version:\n\
+- - update compatibility info: the patch is compatible with all versions of SailfishOS up to $last_compatible\n\
+-/"\
+                    "$check_config_name"
+            fi
         else
             echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >/dev/stderr
         fi
