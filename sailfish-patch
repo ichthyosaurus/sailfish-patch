@@ -1635,6 +1635,7 @@ else
             return 0
         fi
 
+        updated=()
         for s in "${sources[@]}"; do
             local source="$(trim "${s%% *}")"
             local version=
@@ -1733,6 +1734,8 @@ else
                 cd "$base"
                 return 1
             fi
+
+            updated+=("$file")
             cd "$base"
         done
 
@@ -1753,6 +1756,13 @@ else
         shopt -u nullglob dotglob
 
         cd "$base"
+
+        printf "\nupdated:\n"
+        for package in "${updated[@]}"; do
+            rpm -qp "$package" --qf "%{NAME}: %{VERSION} (release %{RELEASE}, %{ARCH})\n"
+        done
+        echo
+
         return 0
     }
 
