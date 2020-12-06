@@ -1553,8 +1553,8 @@ if [[ "$create_new" == true ]]; then
 else
     __update_is_valid_version() { # 1: comparison (>, <, >=, <=, =); 2,3: versions to compare
         local comparison="$1"
-        local check_1="$2"
-        local check_2="$3"
+        local check_1="${2%%-*}" # strip release
+        local check_2="${3%%-*}"
 
         get_largest() {
             printf '%s\n' "$@" | sort --version-sort | head -1
