@@ -1679,16 +1679,22 @@ else
                     return 1
                 fi
 
-                local rpm="$(echo "$repo" | grep "$source" | tail -1)"
+                local rpms=()
+                local versions=()
+                readarray -t rpms <<<"$(echo "$repo" | grep "^$source-[0-9]")"
+                readarray -t versions <<<"$(echo "$repo" | grep "^$source-[0-9]" | sed "s/^$source-//g" | sed 's/.armv7hl.rpm$//g')"
 
-                if (( $? != 0 )); then
-                    echo "error: failed to extract OpenRepos package url for '$source'" >/dev/stderr
-                    return 1
-                fi
-                set +o pipefail
+                local last_selected=
+                local rpm_count=0
+                for pack in "${rpms[@]}"; do
+                    if __update_is_valid_version "$version_action" "${versions[$rpm_count]}" "$version"; then
+                        last_selected="$pack"
+                    fi
+                    ((rpm_count++))
+                done
 
                 cd "$packages"
-                if ! curl "${repo_url%/}/$rpm" -o "${source}.rpm"; then
+                if ! curl "${repo_url%/}/$last_selected" -o "${source}.rpm"; then
                     echo "error: failed to download package '$source'" >/dev/stderr
                     cd "$base"
                     return 1
