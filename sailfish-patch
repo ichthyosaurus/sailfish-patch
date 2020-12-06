@@ -1471,20 +1471,11 @@ __create_diff() { # 1: config, 2: save path
 
     local original="$(__get_original_path)"
     local patched="$(__get_patched_path)"
-    local old_setting="$(git config core.quotepath)"
 
-    git config core.quotepath off
-
-    git diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" |\
+    git -c core.quotepath=off diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" |\
         sed -Ee "s@(--git|---|\+\+\+) (\"?)(a|b)${prefix}(${original#/}|${patched#/})/@\1 \2\3${prefix}@g;
                     s@(--git a/.*) (\"?)b${prefix}${patched#/}/@\1 \2b${prefix}@g;
                         s@(---|\+\+\+) (.*?)\t@\1 \2@g;" > "$2"
-
-    if [[ -n "$old_setting" ]]; then
-        git config core.quotepath "$(old_setting)"
-    else
-        git config --unset core.quotepath
-    fi
 }
 
 __print_initial_help() { # 1: original path, 2: patched path, 3: extra path
