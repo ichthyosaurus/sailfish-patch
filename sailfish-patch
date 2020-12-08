@@ -1952,7 +1952,7 @@ else
             latest_commit="$(git rev-parse --verify --short HEAD 2>/dev/null || echo -n "no-git")"
             diff_file="diff_original_${latest_commit}.patch"
             updated_diff="diff_updated_${latest_commit}.patch"
-            working_diff="diff_applying.patch"  # same as $tmp_diff in __update_apply_diff!
+            working_diff="diff_applying.patch"  # same as $tmp_diff in __update_apply_diff!; TODO documentation
 
             if [[ ! -d "$original" && ! -d "$patched" && ! -f "$working_diff" ]]; then
                 if [[ -f "unified_diff.patch" ]]; then
