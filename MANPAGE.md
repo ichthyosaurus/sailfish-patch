@@ -24,8 +24,6 @@ Create a new patch skeleton with `-c NAME` and put the original files
 in the directory `original`. Copy everything to the directory `patched` and
 make your changes. Configure the project in `build/CONFIG`. Build with `-b`.
 
-Note: separate settings pages are currently only supported via Patchmanager.
-
 You can add all packages a patch is based on in the `SourcePackages` field
 in the configuration file. Running `sailfish-patch -u` will update all source
 files and makes it easy to adapt the patch to new upstream versions.
@@ -35,8 +33,7 @@ SSH if you want to use source packages from the official repos. Make sure this
 is configured correctly. (This is not needed for OpenRepos sources.)
 
 If you want to add your own settings pages or include translation files,
-icons etc. in your patch, you can place them in the `extra` directory. Note
-that this is not yet supported for RPMs.
+icons etc. in your patch, you can place them in the `extra` directory.
 
 Tips:
 

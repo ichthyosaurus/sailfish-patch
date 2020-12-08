@@ -16,8 +16,7 @@ SSH if you want to use source packages from the official repos. Make sure this
 is configured correctly. (This is not needed for OpenRepos sources.)
 
 If you want to add your own settings pages or include translation files,
-icons etc. in your patch, you can place them in the `extra` directory. Note
-that this is not yet supported for RPMs.
+icons etc. in your patch, you can place them in the `extra` directory.
 
 Tips:
 
