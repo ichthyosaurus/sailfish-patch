@@ -1761,8 +1761,10 @@ else
         cd "$base"
 
         printf "\nupdated:\n"
+        update_list="$packages/updated"  # TODO documentation
+        rm -rf "$update_list"
         for package in "${updated[@]}"; do
-            rpm -qp "$package" --qf "%{NAME}: %{VERSION} (release %{RELEASE}, %{ARCH})\n"
+            rpm -qp "$package" --qf "- %{NAME}: %{VERSION} (release %{RELEASE}, %{ARCH})\n" | tee -a "$update_list"
         done
         echo
 
