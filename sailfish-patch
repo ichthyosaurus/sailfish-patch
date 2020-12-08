@@ -866,7 +866,10 @@ __save_template_json() { # 1: output file
     "description": "@DESCRIPTION@",
     "category": "@CATEGORY@",
     "infos": {
-        "maintainer": "@MAINTAINER@"
+        "maintainer": "@MAINTAINER@",
+        "discussion": "@DISCUSSIONLINK@",
+        "donations": "@DONATIONSLINK@",
+        "sources": "@SOURCESLINK@"
     }
 }
 EOF
@@ -2211,7 +2214,7 @@ else
         echo "building version: $rpm_version-$release"
 
         # configure spec and json files
-        for i in PackageName Summary Version Release Maintainer DisplayName Category; do
+        for i in PackageName Summary Version Release Maintainer DisplayName Category DiscussionLink DonationsLink SourcesLink; do
             value="$(get_single_config "$config" "$i")"
             [[ -z "$value" ]] && continue
 
