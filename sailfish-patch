@@ -1519,7 +1519,7 @@ EOF
 
 if [[ "$create_new" == true ]]; then
     if [[ -e "$create_new_name" ]]; then
-        echo "error: the file or directory with the name '$create_new_name' already exists" >/dev/stderr
+        echo "error: a file or directory with the name '$create_new_name' already exists" >/dev/stderr
         exit 1
     fi
 
