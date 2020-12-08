@@ -2128,57 +2128,85 @@ else
     fi
 
     if [[ "$build" == true ]]; then
-        original="$(__get_original_path)"
-        patched="$(__get_patched_path)"
-
-        # require original files
-        if [[ ! -d "$original" ]]; then
-            echo "error: missing original files directory" >/dev/stderr
-            echo "note:  even if the patch only adds files, the 'original'" >/dev/stderr
-            echo "       directory has to be present" >/dev/stderr
-            exit 1
-        fi
-
-        if [[ ! -d "$patched" ]]; then
-            echo "error: missing patched files directory" >/dev/stderr
-            exit 1
-        fi
-
         # require valid config and build directory
         require_build_config || exit 1
         base="$(pwd)"
         config="$(__get_config_path)"
         build_dir="$(__get_build_path)"
         extra_dir="$(__get_extra_path)"
+        original="$(__get_original_path)"
+        patched="$(__get_patched_path)"
+
+        # require original files
+        if [[ ! -d "$original" ]]; then
+            echo "note: creating empty original files directory" >/dev/stderr
+            mkdir -p "$original" || {
+                echo "error: failed to create empty original files directory" >/dev/stderr
+                echo "       Even if the patch only adds files, the 'original'" >/dev/stderr
+                echo "       directory has to be present." >/dev/stderr
+                exit 1
+            }
+        fi
+
+        if [[ ! -d "$patched" && ! -d "$extra_dir" ]]; then
+            # patches may only add a settings page, so the patched directory is only
+            # a hard requirement when no extra files are added
+            echo "error: missing patched files directory" >/dev/stderr
+            exit 1
+        else
+            mkdir -p "$patched" || {
+                echo "error: failed to create empty patched files directory" >/dev/stderr
+                exit 1
+            }
+        fi
+
+        # verify extra files (imported later, so we don't have to clean up if something fails)
+        if [[ -d "$extra_dir" ]]; then
+            if (( $(find "$extra_dir" -mindepth 1 -type d | wc -l) > 0 )); then
+                echo "error: subdirectories are not allowed for extra files"
+                exit 1
+            fi
+
+            if find "$extra_dir" -type f -print0 | tr -d '\n' | tr '\0' '\n' | grep -Pqve "\.(qml|js|png|svg|qm)$"; then
+                echo "error: unsupported extra files found"
+                echo "       Only files with the following extensions are allowed:"
+                echo "          .qml, .js, .png, .svg, .qm"
+                exit 1
+            fi
+
+            langs="$(find "$extra_dir" -type f -iname "*.qm" -execdir printf "%s\0" {} \; | tr '\n' '%' | tr '\0' '\n')"
+            if [[ -n "$langs" ]] && echo "$langs" | grep -Pqve "^./translation_[a-zA-Z_]{2,5}.qm$"; then
+                echo "error: invalid translation file names found"
+                echo "       Translation files must follow the format 'translation_LANG.qm'."
+                exit 1
+            fi
+
+            qmls="$(find "$extra_dir" -type f -iname "*.qml" -print0 | tr '\n' '\t' | tr '\0' '\n')"
+            if [[ -n "$qmls" ]] && ! echo "$qmls" | grep -Pqe '/main.qml$'; then
+                echo "error: extra QML files found but no main file"
+                echo "       A file named 'main.qml' must be provided"
+                echo "       when including extra QML files."
+                exit 1
+            fi
+        fi
 
         # create temp dir
         temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
 
-        # create diff
-        __create_diff "$config" "${temp_build_dir}/unified_diff.patch"
-        cd "$temp_build_dir"
-
         # import extra files
-        if [[ -d "$extra_dir" ]]; then
-            if (( $(find "$extra_dir" -mindepth 1 -type d | wc -l) > 0 )); then
-                echo "warning: subdirectories are not allowed for extra files"
-                echo "         all files will be copied in the same directory"
-            fi
-
-            if find "$extra_dir" -type f | grep -Pq --invert-match -e ".*\.(qml|js|png|svg|qm)"; then
-                echo "warning: unsupported extra files found"
-                echo "         only files with the following extensions are allowed:"
-                echo "            .qml, .js, .png, .svg, .qm"
-                echo "         all other files will be ignored!"
-            fi
-
-            if (( $(find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)" | wc -l) > 0 )); then
+        if [[ -d "$extra_dir" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$extra_dir"/* )" ]]; then
+            if (( $(find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" | wc -l) > 0 )); then
                 mkdir -p "$temp_build_dir/extra"
-                find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)" -exec cp {} "$temp_build_dir/extra" \;
+                find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" -exec cp {} "$temp_build_dir/extra" \;
             else
                 echo "warning: directory for extra files found but there are no usable files"
             fi
         fi
+
+        # create diff
+        __create_diff "$config" "${temp_build_dir}/unified_diff.patch"
+
+        cd "$temp_build_dir" # important: switch to temp_build_dir
 
         # prepare files and templates
         rpm_build_dir="$temp_build_dir/rpm_build"
