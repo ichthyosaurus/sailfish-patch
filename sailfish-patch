@@ -2222,7 +2222,7 @@ else
         # configure spec and json files
         for i in PackageName Summary Version Release Maintainer DisplayName Category DiscussionLink DonationsLink SourcesLink; do
             value="$(get_single_config "$config" "$i")"
-            [[ -z "$value" ]] && continue
+            [[ -z "$value" ]] && value="" # empty values will be left empty
 
             value="${value//\//\\/}" # escape slashes
             sed -i "s/@${i^^}@/$value/g" rpm.spec
