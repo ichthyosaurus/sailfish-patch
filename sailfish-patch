@@ -1705,6 +1705,7 @@ else
                     return 1
                 fi
 
+                echo "downloading package via external device..."
                 remote_temp_dir="/tmp/sailfish-patch.tmp"
                 ssh "$SF_PATCH_SSH_TARGET" -o ConnectTimeout=3\
                     "rm -rf '$remote_temp_dir'; mkdir -p '$remote_temp_dir' && pkcon download '$remote_temp_dir' '$source'"
