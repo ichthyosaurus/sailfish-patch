@@ -2192,6 +2192,7 @@ else
 
         if [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]]; then
             cp extra/* "$rpm_build_dir"
+            mkdir -p "$dist_build_dir/extra" && cp extra/* "$dist_build_dir/extra"
             mv extra/* "$tarball_build_dir"
         fi
 
