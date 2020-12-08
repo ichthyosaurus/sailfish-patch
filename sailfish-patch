@@ -1433,16 +1433,19 @@ __get_extra_path() {
 }
 
 require_build_config() {
-    # require build dir
-    local build_dir="$(__get_build_path)"
-    if [[ ! -d "$build_dir" ]]; then
-        echo "error: could not find build directory" >/dev/stderr
-        return 1
-    fi
-
     # require valid config
     local config="$(__get_config_path)"
     require_config "$config" || return 1
+
+    # require build dir
+    local build_dir="$(__get_build_path)"
+    if [[ ! -d "$build_dir" ]]; then
+        echo "note: creating new build directory" >/dev/stderr
+        mkdir -p "$build_dir" || {
+            echo "error: failed to create new build directory" >/dev/stderr
+            return 1
+        }
+    fi
 
     return 0
 }
