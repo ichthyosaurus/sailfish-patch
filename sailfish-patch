@@ -88,8 +88,9 @@ if ! dependencies no-echo; then
     exit 255
 fi
 
+cSCRIPT="$(basename "$0")"
 show_help() {
-local script="$(basename "$0")"
+local script="$cSCRIPT"
     echo "\
 ** sailfish-patch **
 
@@ -1485,32 +1486,47 @@ __create_diff() { # 1: config, 2: save path
 }
 
 __print_initial_help() { # 1: original path, 2: patched path, 3: extra path
+    local title="Short How-To"
+    local original="$(basename "$1")"
+    local patched="$(basename "$2")"
+    local extra="$(basename "$3")"
+
+    [[ -n "$create_new_name" ]] && title="$create_new_name -- $title"
+
     cat <<EOF
-== SailfishOS Patch: $create_new_name ==
+== SailfishOS Patch: $title ==
 
-The patch has been prepared. The next step is to edit the
-configuration file (CONFIG). Then copy all original files into the two
-directories '$(basename "$1")' and '$(basename "$2")'. Make your changes in the latter.
+1. configure the patch by editing 'CONFIG'
+    - add all source packages to the 'SourcePackages' field
+    - update basic info about the patch
+    - run '$cSCRIPT -C CONFIG' to check for configuration mistakes
+2. bootstrap sources by running '$cSCRIPT -u'
+    - note: it must be possible for '$cSCRIPT' to connect to your device via
+      SSH if you want to use source packages from the official repos. Make sure
+      this is configured correctly. This is not needed for OpenRepos sources.
+    - alternatively, put original sources in '$original' and copy them to '$patched'
+3. commit clean sources
+4. make any changes in '$patched'
 
-You can add all packages the patch is based on in the 'SourcePackages' field
-in the configuration file. Running 'sailfish-patch -u' will update all source
-files and makes it easy to adapt the patch to new upstream versions.
+5. optionally: add extra files like translations, icons, or settings to the
+   '$extra' directory
+    - allowed file extensions: .qml, .js, .png, .svg, .qm
+    - translations files must be named 'translation_LANG.qm'
+    - patch icon must be named 'main.png' ('main-light.png') or 'main.svg' ('main-light.svg')
+    - patch settings page must be named 'main.qml'
+    - no sub-directories are allowed
+    - see https://coderus.openrepos.net/pm2/usage/ for further details
 
-Note that it must be possible for sailfish-patch to connect to your device via
-SSH if you want to use source packages from the official repos. Make sure this
-is configured correctly. (This is not needed for OpenRepos sources.)
-
-If you want to add your own settings pages or include translation files,
-icons etc. in your patch, you can place them in the '$(basename "$3")' directory.
+For updating the patch to new upstream versions, simply run '$cSCRIPT -u'.
 
 Tips:
 - Use 'rpm -qf /path/to/file' to find out which package a file belongs to.
 - Use 'pkcon get-details packagename' to check which version is installed.
-- Use 'sailfish-patch -b -p' to test the patch directly after building (needs ssh).
+- Use '$cSCRIPT -b -p' to test the patch directly after building (needs SSH).
 - Do not push your patch to a public repository. Instead, publish the 'code
   distribution package' which includes only the files that belong to you.
   Other users can rebuild the development environment by running
-  'sailfish-patch -u' in the published directory. This way, you do not have to
+  '$cSCRIPT -u' in the published directory. This way, you do not have to
   publish potentially copyrighted material without permission.
 EOF
 }
