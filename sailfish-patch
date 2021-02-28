@@ -118,7 +118,7 @@ Note: separate settings pages are currently only supported via Patchmanager.
 Usage:
     $script [-b] [-p] [-Po [latest]] [-Pm [latest]] [-S|-S ROUNDS]
     $script -c NAME
-    $script -u
+    $script -u [DIR]
     $script -i CONFIG TARBALL
     $script [-C|-Cu] FILE
     $script [-h] [-V]
@@ -130,9 +130,10 @@ Arguments:
                                   (e.g. add new releases to the CompatibleVersions section)
     -i, --import CONFIG TARBALL - setup a new working directory for the given patch
     -b, --build                 - build RPM and tarball
-    -u, --update                - update the working directory with the
-                                  latest sources (needs working ssh connection
-                                  for all sources except OpenRepos)
+    -u, --update [DIR]          - update the working directory with the latest sources
+                                  This needs a working ssh connection for official source, i.e.
+                                  packages not from OpenRepos. Optional DIR to use already
+                                  downloaded package files from the given directory.
     -f, --force                 - skip some safety checks
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
@@ -181,6 +182,7 @@ create_new=false
 create_new_name=
 build=false
 update=false
+update_local_sources=""
 import=false
 import_config=
 import_tarball=
@@ -236,7 +238,10 @@ while [[ $# > 0 ]]; do
             fi
         ;;
         -b|--build) build=true;;
-        -u|--update) update=true;;
+        -u|--update)
+            update=true
+            [[ -d "$2" ]] && update_local_sources="$2" && shift
+        ;;
         -i|--import)
             import=true
             shift
@@ -1682,7 +1687,18 @@ else
                 version="${s##* }"
             fi
 
-            if [[ "$source" == *":"* ]]; then
+            if [[ -n "$update_local_sources" ]]; then
+                [[ "$source" == *":"* ]] && source="${source#*:}"  # remove openrepos user name
+                file="$packages/${source}.rpm"
+                local local_file="$update_local_sources/$source.rpm"
+
+                if [[ ! -f "$local_file" ]]; then
+                    echo "error: local package file '$local_file' not found" >/dev/stderr
+                    return 1
+                else
+                    cp --backup=t "$local_file" "$file"
+                fi
+            elif [[ "$source" == *":"* ]]; then
                 # assume openrepos
                 local user="${source%%:*}"
                 local source="${source#*:}"
