@@ -247,7 +247,7 @@ or grab the source from <https://github.com/sunaku/md2man>.
 Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman.
 
 ## COPYRIGHT
-Copyright (C) 2016  Cornerman, 2018-2020  Mirian Margiani
+Copyright (C) 2016  Cornerman, 2018-2021  Mirian Margiani
 
 `sailfish-patch` is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
