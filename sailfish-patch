@@ -1625,13 +1625,15 @@ else
     }
 
     # we assume config has been checked before and is valid
-    __update_fetch_latest_sources() {
+    __update_fetch_latest_sources() { # 1: optionally a suffix for source backups
         local original="$(__get_original_path)"
         local config="$(__get_config_path)"
         local packages="$(__get_sources_path)"
         local extract="${packages%/}/extract"
         local base="$(pwd)"
         local -r openrepos_url="https://sailfish.openrepos.net/"
+        local packages_backup=''
+        [[ -n "$1" ]] && packages_backup="$packages-old-$1"
 
         if ! rm -rf "$original"; then
             echo "error: failed to remove old original sources" >/dev/stderr
@@ -1639,7 +1641,11 @@ else
         fi
 
         if [[ -d "$packages" ]]; then
-            rm -rf "$packages" || return 1
+            if [[ -n "$packages_backup" ]]; then
+                mv --backup=t -T "$packages" "$packages_backup"
+            else
+                rm -rf "$packages" || return 1
+            fi
         fi
 
         if [[ -d "$extract" ]]; then
@@ -2017,7 +2023,7 @@ else
             case "$type" in
                 dist_bootstrap|initial_bootstrap)
                     if [[ "$needs_sources" == true ]]; then
-                        __update_fetch_latest_sources && __update_copy_sources || {
+                        __update_fetch_latest_sources "$latest_commit" && __update_copy_sources || {
                             echo "unrolling changes..."
                             rm -rf "$original" "$patched"
                             exit 1
@@ -2053,7 +2059,7 @@ else
                     mkdir -p "$original"
 
                     if [[ "$needs_sources" == true ]]; then
-                        __update_fetch_latest_sources || {
+                        __update_fetch_latest_sources "$latest_commit" || {
                             echo "note: unrolling changes..."
                             rm -rf "$original" && mv -T "$original_backup" "$original"
                             exit 1
@@ -2087,6 +2093,7 @@ else
 
                     if diff <(sed '/^index/d' "$diff_file") <(sed '/^index/d' "$updated_diff") >/dev/null; then
                         echo "success: old and new patch files are identical"
+                        echo "         you can remove the backup copies now"
                     else
                         echo "warning: updated patch file has changed"
                     fi
