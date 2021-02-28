@@ -119,7 +119,7 @@ Usage:
     $script [-b] [-p] [-Po [latest]] [-Pm [latest]] [-S|-S ROUNDS]
     $script -c NAME
     $script -u [DIR]
-    $script -i CONFIG TARBALL
+    $script -i CONFIG SOURCE
     $script [-C|-Cu] FILE
     $script [-h] [-V]
 
@@ -128,7 +128,10 @@ Arguments:
     -C, --check-config FILE     - validate config file FILE
     -Cu, --config-update FILE   - same as -C, but update sections automatically
                                   (e.g. add new releases to the CompatibleVersions section)
-    -i, --import CONFIG TARBALL - setup a new working directory for the given patch
+    -i, --import CONFIG SOURCE  - setup a new working directory for the given patch
+                                  SOURCE can either be a tarball containing the patch file
+                                  (unified_diff.patch) in its root, or it can be a patch.
+                                  Use -eC to create a new config file.
     -b, --build                 - build RPM and tarball
     -u, --update [DIR]          - update the working directory with the latest sources
                                   This needs a working ssh connection for official source, i.e.
@@ -185,7 +188,7 @@ update=false
 update_local_sources=""
 import=false
 import_config=
-import_tarball=
+import_source=
 import_command="$0"
 optimize_screenshots=false
 optimize_screenshots_runs=1
@@ -266,7 +269,7 @@ while [[ $# > 0 ]]; do
                 exit 1
             else
                 # save absolute path
-                import_tarball="$(readlink -m "$(dirname "$1")")/$(basename "$1")"
+                import_source="$(readlink -m "$(dirname "$1")")/$(basename "$1")"
             fi
         ;;
         -p|--publish-ssh)
@@ -1930,20 +1933,38 @@ else
 
         # extract tarball
         base="$(pwd)"
-        extract_dir="$(mktemp -d tmp.XXXX -p .)"
-        cd "$extract_dir"
-        tar -xzvf "$import_tarball"
+        extract_dir=""
 
-        if [[ ! -f "unified_diff.patch" ]]; then
-            echo "error: could not find diff file in tarball" >/dev/stderr
+        if [[ "$(file --mime-type -b "$import_source")" == "text/x-diff" ]]; then
+            echo -n # skip, it is a patch file so we can use it directly
+        elif tar -tf "$import_source" >/dev/null 2>/dev/null; then
+            # it is a tar file, so we extract it and search for the patch
+            extract_dir="$(mktemp -d tmp.XXXX -p .)"
+            cd "$extract_dir"
+            tar -xzvf "$import_source"
+
+            if [[ ! -f "unified_diff.patch" ]]; then
+                echo "error: could not find diff file in tarball" >/dev/stderr
+                exit 1
+            fi
+
+            cd "$base"
+            import_source="$extract_dir/unified_diff.patch"
+        else
+            echo "error: unrecognized source file" >/dev/stderr
+            echo "       Any patch file, or a patch named 'unified_diff.patch' inside" >/dev/stderr
+            echo "       a tar archive are supported." >/dev/stderr
             exit 1
         fi
 
-        cd "$base"
+        __update_apply_diff "$import_source" || {
+            [[ -n "$extract_dir" ]] && rm -rf "$extract_dir"
+            exit 1
+        }
 
-        __update_apply_diff "$extract_dir/unified_diff.patch" || exit 1
-
-        rm -rf "$extract_dir"
+        if [[ -n "$extract_dir" ]]; then
+            rm -rf "$extract_dir"
+        fi
 
         git add "$(__get_config_path)" "$(__get_original_path)" "$(__get_patched_path)" &&\
             git commit -m "patch automatically imported by sailfish-patch"
