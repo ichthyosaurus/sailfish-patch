@@ -3,34 +3,54 @@
 
 `sailfish-patch` is a helper tool for developing SailfishOS patches.
 
-Create a new patch skeleton with `-c NAME` and put the original files
-in the directory `original`. Copy everything to the directory `patched` and
-make your changes. Configure the project in `build/CONFIG`. Build with `-b`.
+Create a new patch skeleton with `-c NAME`.
+Add a list of source packages in `CONFIG`, and bootstrap the development with `-u`.
+Make your changes in `patched`.
+Build with `-b`.
 
-You can add all packages a patch is based on in the `SourcePackages` field
-in the configuration file. Running `sailfish-patch -u` will update all source
-files and makes it easy to adapt the patch to new upstream versions.
-
-Note that it must be possible for `sailfish-patch` to connect to your device via
-SSH if you want to use source packages from the official repos. Make sure this
-is configured correctly. (This is not needed for OpenRepos sources.)
+For updating the patch to new upstream versions, simply run `sailfish-patch -u`.
 
 If you want to add your own settings pages or include translation files,
 icons etc. in your patch, you can place them in the `extra` directory.
+
+# Short how-to
+
+1. configure the patch by editing 'CONFIG'
+    - add all source packages to the 'SourcePackages' field
+    - update basic info about the patch
+    - run 'sailfish-patch -C CONFIG' to check for configuration mistakes
+2. bootstrap sources by running 'sailfish-patch -u'
+    - note: it must be possible for 'sailfish-patch' to connect to your device via
+      SSH if you want to use source packages from the official repos. Make sure
+      this is configured correctly. This is not needed for OpenRepos sources.
+    - alternatively, put original sources in 'original' and copy them to 'patched'
+3. commit clean sources
+4. make any changes in 'patched'
+
+5. optionally: add extra files like translations, icons, or settings to the 'extra' directory
+    - allowed file extensions: .qml, .js, .png, .svg, .qm
+    - translations files must be named 'translation_LANG.qm'
+    - patch icon must be named 'main.png' ('main-light.png') or 'main.svg' ('main-light.svg')
+    - patch settings page must be named 'main.qml'
+    - no sub-directories are allowed
+    - see https://coderus.openrepos.net/pm2/usage/ for further details
+
+6. run '$cSCRIPT -b' to build, use '-p' to test it directly via SSH
+7. publish it to
+7. update the patch to new upstream versions by running '$cSCRIPT -u'
 
 Tips:
 
 - Use `rpm -qf /path/to/file` to find out which package a file belongs to.
 - Use `pkcon get-details packagename` to check which version is installed.
-- Use `sailfish-patch -b -p` to test the patch directly after building (needs ssh).
+- Use `sailfish-patch -b -p` to test the patch directly after building (needs SSH).
 - Do not push your patch to a public repository. Instead, publish the `code
   distribution package` which includes only the files that belong to you.
   Other users can rebuild the development environment by running
   `sailfish-patch -u` in the published directory. This way, you do not have to
   publish potentially copyrighted material without permission.
 
-
-See `MANPAGE.md` for more information.
+See [MANPAGE.md] for more information.
 
 # Installation
 
