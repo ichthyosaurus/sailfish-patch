@@ -34,12 +34,25 @@ if [[ -z "$SF_PATCH_PASSFILE" ]]; then
     publish_via_ssh_possible=false
 fi
 
+
 if [[ -z "$SF_PATCH_SSH_TARGET" ]]; then
     publish_via_ssh_possible=false
+elif [[ "$SF_PATCH_SSH_TARGET" == *@* ]]; then
+    tmp_SF_PATCH_REMOTE_USERNAME="${SF_PATCH_SSH_TARGET%%@*}"
+    SF_PATCH_SSH_TARGET="${SF_PATCH_SSH_TARGET#*@}"  # remove the user name
+fi
+
+if [[ -z "$SF_PATCH_REMOTE_USERNAME" ]]; then
+    SF_PATCH_REMOTE_USERNAME="${tmp_SF_PATCH_REMOTE_USERNAME:-nemo}"
+elif [[ -n "$tmp_SF_PATCH_REMOTE_USERNAME" ]]; then
+    if [[ "$tmp_SF_PATCH_REMOTE_USERNAME" != "$SF_PATCH_REMOTE_USERNAME" ]]; then
+        echo "warning: different user names for SSH and deployments are not supported" >/dev/stderr
+        echo "         (all commands will use SF_PATCH_REMOTE_USERNAME='$SF_PATCH_REMOTE_USERNAME')"
+    fi
 fi
 
 if [[ -z "$SF_PATCH_REMOTE_PATH" ]]; then
-    SF_PATCH_REMOTE_PATH="/home/nemo"
+    SF_PATCH_REMOTE_PATH="/home/$SF_PATCH_REMOTE_USERNAME"
 fi
 
 if [[ -z "$SF_PATCH_GLOBAL_DEFAULTS" ]]; then
@@ -152,6 +165,8 @@ Environment:
         SF_PATCH_PASSFILE=$SF_PATCH_PASSFILE
     - how to connect to your device via ssh (config name or IP)
         SF_PATCH_SSH_TARGET=$SF_PATCH_SSH_TARGET
+    - user name to use for deploying and for ssh connections
+        SF_PATCH_REMOTE_USERNAME=$SF_PATCH_REMOTE_USERNAME
     - path to a directory where patch RPMs will be stored on your device
         SF_PATCH_REMOTE_PATH=$SF_PATCH_REMOTE_PATH
     - path to the global configuration file
@@ -1732,7 +1747,7 @@ else
                     return 1
                 fi
 
-                scp nemo@"$SF_PATCH_SSH_TARGET":"$remote_temp_dir/${source}*" "$file"
+                scp "$SF_PATCH_REMOTE_USERNAME@$SF_PATCH_SSH_TARGET:$remote_temp_dir/${source}*" "$file"
 
                 if (( $? != 0 )); then
                     echo "error: failed to transfer downloaded package '$source' from the device" >/dev/stderr
@@ -2351,7 +2366,7 @@ else
         config="$(__get_config_path)" # we assume it has been checked before
         package_name="$(get_single_config "$config" "PackageName")"
 
-        scp "$rpm" nemo@"$SF_PATCH_SSH_TARGET":"$SF_PATCH_REMOTE_PATH"
+        scp "$rpm" "$SF_PATCH_REMOTE_USERNAME@$SF_PATCH_SSH_TARGET:$SF_PATCH_REMOTE_PATH"
         head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -u '$package_name'"
         head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su pkcon -y install-local '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"
         head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"
