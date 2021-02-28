@@ -2561,22 +2561,22 @@ $update_changelog"
 fi
 
 if (( ${#debug_export_template[@]} > 0 )); then
-    __save_file() { # 1: file name
-        if [[ -f "$1" ]]; then  # make sure we don't overwrite anything
-            file_temp="$(mktemp -p . sailfish-patch-XXXX.tmp)"
-            mv --backup=t -T "$file_temp" "$1" && rm "$1"
-        fi
-        echo "$1"
-    }
+    # __save_file() { # 1: file name
+    #     if [[ -f "$1" ]]; then  # make sure we don't overwrite anything
+    #         file_temp="$(mktemp -p . sailfish-patch-XXXX.tmp)"
+    #         mv --backup=t -T "$file_temp" "$1" && rm "$1"
+    #     fi
+    #     echo "$1"
+    # }
 
     for i in "${debug_export_template[@]}"; do
         case "$i" in
-            config) __save_template_config "$(__save_file "$i")";;
-            license) __save_template_copying "$(__save_file "$i")";;
-            gitignore) __save_template_gitignore "$(__save_file ".$i")";;
-            icon) __save_template_icon "$(__save_file "$i.png")";;
-            json) __save_template_json "$(__save_file "$i.json")";;
-            spec) __save_template_spec "$(__save_file "$i.spec")";;
+            config) __save_template_config /dev/stdout;;        # "$(__save_file "CONFIG.template")";;
+            license) __save_template_copying /dev/stdout;;      # "$(__save_file "COPYING")";;
+            gitignore) __save_template_gitignore /dev/stdout;;  # "$(__save_file ".$i")";;
+            icon) __save_template_icon /dev/stdout;;            # "$(__save_file "$i.png")";;
+            json) __save_template_json /dev/stdout;;            # "$(__save_file "$i.json")";;
+            spec) __save_template_spec /dev/stdout;;            # "$(__save_file "$i.spec")";;
         esac
     done
 fi
