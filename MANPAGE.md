@@ -10,15 +10,17 @@ sailfish-patch - Manage your SailfishOS patches
 
 `sailfish-patch` [-c NAME]
 
-`sailfish-patch` [-u]
+`sailfish-patch` [-u [DIR]]
 
-`sailfish-patch` [-i CONFIG TARBALL]
+`sailfish-patch` [-i CONFIG SOURCE]
 
 `sailfish-patch` [-C|-Cu FILE]
 
 `sailfish-patch` [-h] [-V]
 
 ## DESCRIPTION
+
+**Creating a new patch:**
 
 Create a new patch skeleton with `-c NAME` and put the original files
 in the directory `original`. Copy everything to the directory `patched` and
@@ -35,7 +37,15 @@ is configured correctly. (This is not needed for OpenRepos sources.)
 If you want to add your own settings pages or include translation files,
 icons etc. in your patch, you can place them in the `extra` directory.
 
-Tips:
+**Importing an existing patch:**
+
+An existing patch can be imported by running `sailfish-patch` with the `--import`
+option. Create a new configuration file using `sailfish-patch -eC > CONFIG`,
+then specify source packages, patch name, etc. Finally run
+`sailfish-patch CONFIG PATCH` to create a new bootstrapped repository. (See above
+for further details.)
+
+**Tips:**
 
 - Use `rpm -qf /path/to/file` to find out which package a file belongs to.
 - Use `pkcon get-details packagename` to check which version is installed.
@@ -57,15 +67,14 @@ Tips:
 `-Cu, --config-update FILE`
   Same as `-C`, but update sections automatically (e.g. add new releases to the `CompatibleVersions` section)
 
-`-i, --import CONFIG TARBALL`
-  Setup a new working directory for the given patch
+`-i, --import CONFIG SOURCE`
+  Setup a new working directory for the given patch `SOURCE` can either be a tarball containing the patch file (`unified_diff.patch`) in its root, or it can be a patch. Use `-eC` to create a new config file.
 
 `-b, --build`
   Build RPM and tarball
 
-`-u, --update`
-  Update the working directory with the latest sources (needs a working SSH
-  connection for all sources except OpenRepos)
+`-u, --update [DIR]`
+  Update the working directory with the latest sources. This needs a working ssh connection for official source, i.e. packages not from OpenRepos. Optional DIR to use already downloaded package files from the given directory.
 
 `-f, --force`
   Skip some safety checks
@@ -73,24 +82,16 @@ Tips:
 `-p, --publish-ssh`
   Publish and install patch on your device via SSH
 
-`-Po, --publish-openrepos`
-  Wizard for publishing in OpenRepos.
-  (When given 'latest' as argument to `-Po`, the wizard will provide info for updating the entry.)
+`-Po, --publish-openrepos [latest]`
+  Wizard for publishing in OpenRepos. (When given `latest` as argument to `-Po`, the wizard will provide info for updating the entry.)
 
-`-Pm, --publish-patchmanager`
+`-Pm, --publish-patchmanager [latest]`
   Wizard for publishing in PM's online catalogue. (See `-Po` for more details.)
 
 `-S, --optimize-screenshots [ROUNDS]`
-  Optimize PNG screenshot files of the current project. Optionally specify number
-  of processing rounds for best result (default: 1).
+  Optimize PNG screenshot files of the current project. Optionally specify number of processing rounds for best result (default: 1).
 
-### Debug Options
-`-R, --check-releases`
-  Load a list of SailfishOS releases from the Internet and compare it to the list of versions currently supported
-
-`-g, --use-git-apply`
-  Use git-apply(1) instead of patch(1) for applying the patch (see `-i` and `-u`)
-
+### Templates
 `-eC, --export-config`
   Export CONFIG template
 
@@ -108,6 +109,13 @@ Tips:
 
 `-eS, --export-spec`
   Export RPM spec-file template
+
+### Debug Options
+`-R, --check-releases`
+  Load a list of SailfishOS releases from the Internet and compare it to the list of versions currently supported
+
+`-g, --use-git-apply`
+  Use git-apply(1) instead of patch(1) for applying the patch (see `-i` and `-u`)
 
 ### General Information
 `-h, --help`
@@ -140,6 +148,9 @@ The value of `SF_PATCH_GLOBAL_DEFAULTS` defaults to:
 
 `SF_PATCH_SSH_TARGET`
   How to connect to your device via ssh (config name or IP)
+
+`SF_PATCH_REMOTE_USERNAME`
+  User name to use for deploying and for ssh connections
 
 `SF_PATCH_REMOTE_PATH`
   Path to a directory where patch RPMs will be stored on your device
@@ -176,7 +187,7 @@ supported by cross-checking the results with Patchmanager's list at:
 
     https://coderus.openrepos.net/pm2/upload/
 
-Finally, update the variable '$check_versions' and create a pull request at:
+Finally, update the variable `$check_versions` and create a pull request at:
 
     https://github.com/ichthyosaurus/sailfish-patch
 
@@ -193,12 +204,11 @@ directory listed in your `$PATH` and mark it as executable:
 
     chmod +x sailfish-patch
 
-To install the manual page, you have to compile it from the Markdown source.
-For this, `md2man` can be used, or any other tool at your liking. Then copy
-the generated manual page to your local manual directory. Usually something
-like the below should do the job:
+The manual page can be compiled from the Markdown source using tools like
+`md2man`, `go-md2man`, etc. Then copy the generated manual page to your local
+manual directory. Usually something like the following should do the trick:
 
-    md2man-roff MANPAGE.md | gzip -c - > "sailfish-patch.1.gz"
+    go-md2man -in MANPAGE.md | gzip -c - > "sailfish-patch.1.gz"
     sudo cp "sailfish-patch.1.gz" "/usr/local/man/man1/sailfish-patch.1.gz"
 
 ### Notes

@@ -15,6 +15,8 @@ icons etc. in your patch, you can place them in the `extra` directory.
 
 # Short how-to
 
+## Creating a new patch
+
 1. configure the patch by editing 'CONFIG'
     - add all source packages to the 'SourcePackages' field
     - update basic info about the patch
@@ -35,9 +37,9 @@ icons etc. in your patch, you can place them in the `extra` directory.
     - no sub-directories are allowed
     - see https://coderus.openrepos.net/pm2/usage/ for further details
 
-6. run '$cSCRIPT -b' to build, use '-p' to test it directly via SSH
+6. run 'sailfish-patch -b' to build, use '-p' to test it directly via SSH
 7. publish it to
-7. update the patch to new upstream versions by running '$cSCRIPT -u'
+7. update the patch to new upstream versions by running 'sailfish-patch -u'
 
 Tips:
 
@@ -51,6 +53,12 @@ Tips:
   publish potentially copyrighted material without permission.
 
 See [MANPAGE.md] for more information.
+
+## Importing an existing patch
+
+- create a new configuration file with `-eC > CONFIG`
+- specify source packages, patch name, etc. (see step 1 above)
+- use `-i CONFIG unified_diff.patch` to create a new repo and bootstrap it
 
 # Installation
 
