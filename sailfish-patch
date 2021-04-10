@@ -880,6 +880,7 @@ diff_apply_command.sh
 diff_applying.patch
 original-old-*
 patched-old-*
+source-packages-old-*
 build.*
 *~
 EOF
