@@ -2406,6 +2406,7 @@ else
         echo "deploying patch..."
         require_current_package rpm || exit 1
         rpm="$(__get_package_path rpm)"
+        echo "package: $rpm"
 
         if [[ ! -f "$SF_PATCH_PASSFILE" ]]; then
             echo "error: passphrase file not found" >/dev/stderr
