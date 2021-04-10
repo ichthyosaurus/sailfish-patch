@@ -2485,6 +2485,43 @@ $value"
         read -n 1 -s -p "Screenshots (first directory path): $screenshots_path"; echo
     }
 
+    __wizard_load_changelog() { # 1: target ('openrepos' or 'catalogue')
+        local config="$(__get_config_path)" # we assume it has been checked before
+        local changelog="$(get_multi_config "$config" "Changelog")"
+
+        if [[ "$1" == "openrepos" ]]; then
+            # put each paragraph separated by a blank line into <p> tags,
+            # end each line with <br>
+            readarray -t changelog_lines <<<"$changelog"
+            changelog=
+
+            local in_paragraph=false
+            for l in "${changelog_lines[@]}"; do
+                l="$(trim "$l")"
+
+                if [[ -n "$l" ]]; then
+                    if [[ "$in_paragraph" == false ]]; then
+                        in_paragraph=true
+                        changelog+="<p>"
+                    fi
+                    changelog+="$l<br>"
+                else
+                    if [[ "$in_paragraph" == true ]]; then
+                        changelog="${changelog%<br>}</p>
+" # newline intended
+                    fi
+                    in_paragraph=false
+                fi
+            done
+        fi
+
+        echo -n "$changelog" | xclip -selection c
+
+        read -n 1 -s -p "Changelog:
+$changelog"  # newline intended
+        echo
+    }
+
     __wizard_load_description() { # 1: target ('openrepos' or 'catalogue')
         local config="$(__get_config_path)" # we assume it has been checked before
         local description="$(get_multi_config "$config" "Description")"
@@ -2512,8 +2549,10 @@ $value"
             fi
         done
 
-        # html-ify links
-        description="$(echo "$description" | perl -p0e 's/\[(.*?)\]\((.+?)\)/<a href="\2">\1<\/a>/g')"
+        # html-ify links and very basic highlighting
+        description="$(echo "$description" |\
+            perl -p0e 's/\[(.*?)\]\((.+?)\)/<a href="\2">\1<\/a>/g' |\
+            perl -p0e 's/\B\*\*(.+?)\*\*\B/<b>\1<\/b>/g; s/\b_?_(.+?)_?_\b/<u>\1<\/u>/g; s/\B\*(.+?)\*\B/<i>\1<\/i>/g')"
 
         if [[ "$1" == "openrepos" ]]; then
             # append extra links
@@ -2580,7 +2619,7 @@ $description"  # newline intended
         echo -n "$rpm" | xclip -selection c
         read -n 1 -s -p "Application version: $rpm"; echo
 
-        __wizard_load m "Changelog" "Changelog"
+        __wizard_load_changelog openrepos
     fi
 
     if [[ "$publish_to_pm_catalogue" == true ]]; then
@@ -2620,7 +2659,7 @@ $description"  # newline intended
 $update_changelog"
             echo
         else
-            __wizard_load m "Changelog" "Changelog"
+            __wizard_load_changelog catalogue
         fi
 
         echo done
