@@ -1429,13 +1429,17 @@ __get_package_path() { # 1: type (rpm/tarball)
 
     local extension=""
     if [[ "$1" == rpm ]]; then
-        extension="rpm"
+        extension="noarch.rpm"
     else
         extension="tar.gz"
     fi
 
-    package_name="$(get_single_config "$(__get_config_path)" "PackageName")"
-    package="$(find "$(__get_build_path)" -maxdepth 1 -iname "$package_name-*.$extension" | sort --version-sort | tail -1)"
+    local config="$(__get_config_path)"
+    local package_name="$(get_single_config "$config" "PackageName")"
+    local version="$(get_single_config "$config" "Version")"
+    local release="$(get_single_config "$config" "Release")"
+    local package="$(find "$(__get_build_path)" -maxdepth 1 -iname "$package_name-$version-$release.$extension" | sort --version-sort | tail -1)"
+
     echo -n "$package"
 }
 
