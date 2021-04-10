@@ -504,7 +504,7 @@ if [[ "$check_config" == true ]]; then
         fi
 
         if echo "$value" | grep -Pqoe "@[^ ]+@"; then
-            echo "error: field '$key' is not configured ($value; line $line)"
+            echo "error: field '$key' is not configured ($value; line $line)" >/dev/stderr
             return 1
         fi
 
@@ -512,7 +512,7 @@ if [[ "$check_config" == true ]]; then
             return 0
         elif echo "${check_default_dummies[$key]}" | sed 's/|/\n/g' |\
                 grep -Pqoe "^$(echo "$value" | sed 's/[][\.|$(){}?+*^]/\\&/g')"; then
-            echo "error: field '$key' still contains a dummy value (line $line)"
+            echo "error: field '$key' still contains a dummy value (line $line)" >/dev/stderr
             return 1
         else
             return 0
@@ -620,7 +620,7 @@ if [[ "$check_config" == true ]]; then
                     # special rules
                     if [[ "$key" == "Prefix" ]]; then
                         if [[ "$value" != "/"* ]]; then
-                            echo "error: prefix must be an absolute path ($value; line $count)"
+                            echo "error: prefix must be an absolute path ($value; line $count)" >/dev/stderr
                             error=true
                         fi
                     fi
@@ -1994,11 +1994,11 @@ else
         needs_sources=true
         if (( ${#sources[@]} == 1 )) && [[ -z "$(trim "${sources[0]}")" ]]; then
             if [[ -d "$original" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
-                echo "error: no source packages specified but original source files found"
-                echo "error: automatic update not possible"
+                echo "error: no source packages specified but original source files found" >/dev/stderr
+                echo "error: automatic update not possible" >/dev/stderr
                 exit 1
             else
-                echo "note: no source packages specified"
+                echo "note: no source packages specified" >/dev/stderr
                 needs_sources=false
                 mkdir -p "$original"
             fi
@@ -2031,11 +2031,11 @@ else
 
             if [[ ! -d "$original" && ! -d "$patched" && ! -f "$working_diff" ]]; then
                 if [[ -f "unified_diff.patch" ]]; then
-                    echo "note: bootstrapping distribution package"
+                    echo "note: bootstrapping distribution package" >/dev/stderr
                     diff_file="unified_diff.patch"
                     type=dist_bootstrap
                 else
-                    echo "note: bootstrapping an empty package"
+                    echo "note: bootstrapping an empty package" >/dev/stderr
                     type=initial_bootstrap
                 fi
             elif [[ ! -d "$original" ]]; then
@@ -2046,11 +2046,11 @@ else
                 exit 1
             elif [[ -f "$working_diff" ]]; then
                 type=retry
-                echo "note: automatic updating failed"
-                echo "      Make sure both source directories contain updated but unchanged sources."
-                echo "      Continue by comitting the changed files. Do not reset them if you want to continue."
-                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command."
-                echo "      If it fails again, you can checkout the updated sources and try again."
+                echo "note: automatic updating failed" >/dev/stderr
+                echo "      Make sure both source directories contain updated but unchanged sources." >/dev/stderr
+                echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >/dev/stderr
+                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >/dev/stderr
+                echo "      If it fails again, you can checkout the updated sources and try again." >/dev/stderr
                 exit 0
             fi
 
@@ -2069,10 +2069,10 @@ else
 
                     if [[ "$type" == dist_bootstrap ]]; then
                         if ! __update_apply_diff "$diff_file"; then
-                            echo "error: failed to apply patch to downloaded sources"
-                            echo "       Both source directories now contain fresh but unchanged sources."
-                            echo "       The original patch is still available in '$diff_file' and you can"
-                            echo "       try applying it manually to the files in '$patched'."
+                            echo "error: failed to apply patch to downloaded sources" >/dev/stderr
+                            echo "       Both source directories now contain fresh but unchanged sources." >/dev/stderr
+                            echo "       The original patch is still available in '$diff_file' and you can" >/dev/stderr
+                            echo "       try applying it manually to the files in '$patched'." >/dev/stderr
                             exit 1
                         else
                             __create_diff "$(__get_config_path)" "$updated_diff"
@@ -2116,11 +2116,11 @@ else
                     fi
 
                     __update_apply_diff "$diff_file" && rm -f "$working_diff" || {
-                        echo "note: the original patch has been saved to '$diff_file'"
-                        echo "      Both source directories now contain updated but unchanged sources."
-                        echo "      Continue by comitting the changed files. Do not reset them if you want to continue."
-                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command."
-                        echo "      If it fails again, you can checkout the updated sources and try again."
+                        echo "note: the original patch has been saved to '$diff_file'" >/dev/stderr
+                        echo "      Both source directories now contain updated but unchanged sources." >/dev/stderr
+                        echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >/dev/stderr
+                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >/dev/stderr
+                        echo "      If it fails again, you can checkout the updated sources and try again." >/dev/stderr
                         exit 1
                     }
 
@@ -2132,10 +2132,10 @@ else
                         echo "success: old and new patch files are identical"
                         echo "         you can remove the backup copies now"
                     else
-                        echo "warning: updated patch file has changed"
+                        echo "warning: updated patch file has changed" >/dev/stderr
                     fi
                 ;;
-                *) echo "error: invalid update type '$type'" && exit 1;;
+                *) echo "error: invalid update type '$type'" >/dev/stderr && exit 1;;
             esac
         fi
     fi
@@ -2239,29 +2239,29 @@ else
         # verify extra files (imported later, so we don't have to clean up if something fails)
         if [[ -d "$extra_dir" ]]; then
             if (( $(find "$extra_dir" -mindepth 1 -type d | wc -l) > 0 )); then
-                echo "error: subdirectories are not allowed for extra files"
+                echo "error: subdirectories are not allowed for extra files" >/dev/stderr
                 exit 1
             fi
 
             if find "$extra_dir" -type f -print0 | tr -d '\n' | tr '\0' '\n' | grep -Pqve "\.(qml|js|png|svg|qm)$"; then
-                echo "error: unsupported extra files found"
-                echo "       Only files with the following extensions are allowed:"
-                echo "          .qml, .js, .png, .svg, .qm"
+                echo "error: unsupported extra files found" >/dev/stderr
+                echo "       Only files with the following extensions are allowed:" >/dev/stderr
+                echo "          .qml, .js, .png, .svg, .qm" >/dev/stderr
                 exit 1
             fi
 
             langs="$(find "$extra_dir" -type f -iname "*.qm" -execdir printf "%s\0" {} \; | tr '\n' '%' | tr '\0' '\n')"
             if [[ -n "$langs" ]] && echo "$langs" | grep -Pqve "^./translation_[a-zA-Z_]{2,5}.qm$"; then
-                echo "error: invalid translation file names found"
-                echo "       Translation files must follow the format 'translation_LANG.qm'."
+                echo "error: invalid translation file names found" >/dev/stderr
+                echo "       Translation files must follow the format 'translation_LANG.qm'." >/dev/stderr
                 exit 1
             fi
 
             qmls="$(find "$extra_dir" -type f -iname "*.qml" -print0 | tr '\n' '\t' | tr '\0' '\n')"
             if [[ -n "$qmls" ]] && ! echo "$qmls" | grep -Pqe '/main.qml$'; then
-                echo "error: extra QML files found but no main file"
-                echo "       A file named 'main.qml' must be provided"
-                echo "       when including extra QML files."
+                echo "error: extra QML files found but no main file" >/dev/stderr
+                echo "       A file named 'main.qml' must be provided" >/dev/stderr
+                echo "       when including extra QML files." >/dev/stderr
                 exit 1
             fi
         fi
