@@ -82,7 +82,7 @@ SSH into the virtual machine with `vagrant ssh`, you find the synced folder unde
 
 # License
 
-`sailfish-patch 2.2.0 (2021-02-28)`
+`sailfish-patch 2.3.0 (2021-04-24)`
 
 Copyright (C) 2018-2021  Mirian Margiani
 
