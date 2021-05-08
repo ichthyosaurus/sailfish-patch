@@ -416,7 +416,7 @@ declare -A default_config_values=(
 [SourcesLink]="s@dummy"
 [Version]="s@X.Y.Z"
 [Release]="s@N"
-[Requires]="m@sailfish-version >= 3.0.0|${check_default_dummies[Requires]}"
+[Requires]="m@sailfish-version >= 3.0.0|@sources|${check_default_dummies[Requires]}"
 [Conflicts]="m@dummy"
 [Obsoletes]="m@dummy"
 [Screenshots]="m@screenshot-1.png|/home/user/screen-2.png|path/relative/to/config/file/location/screen-3.png"
@@ -856,6 +856,7 @@ SourcesLink: $(__get_default_config "SourcesLink")
 Version: $(__get_default_config "Version")
 Release: $(__get_default_config "Release")
 
+# Use @sources to mark all entries of SourcePackages as required.
 Requires:
 $(__get_default_config "Requires")
 
@@ -2393,14 +2394,35 @@ else
             "$rpm_build_dir/$cDEFAULT_JSON_NAME" > _tmp && mv _tmp "$rpm_build_dir/$cDEFAULT_JSON_NAME"
 
         # configure rpm-specific fields
+        # NOTE: we don't deduplicate any entries, neither do we check for invalid
+        # or contradictory lines. If it's a problem, rpmbuild can find it.
         for i in Requires Obsoletes Conflicts; do
             values="$(get_multi_config "$config" "$i")"
 
             if [[ -n "$values" ]]; then
                 readarray -t m_lines <<<"$(echo "$values")"
+                m_clean_lines=()
 
                 for l in "${m_lines[@]}"; do
+                    [[ -z "$l" ]] && continue
                     l="${l//\//\\/}" # escape slashes
+
+                    # special case: package requires all packages listed in
+                    # SourcePackages. Field references are otherwise not supported.
+                    if [[ "$i" == Requires && "$l" == "@sources" ]]; then
+                        readarray -t rpm_config_requires_sources <<<"$(get_multi_config "$config" "SourcePackages")"
+
+                        for s in "${rpm_config_requires_sources[@]}"; do
+                            [[ -z "$s" ]] && continue
+                            s="${s//\//\\/}" # escape slashes
+                            m_clean_lines+=("$s")
+                        done
+                    else
+                        m_clean_lines+=("$l")
+                    fi
+                done
+
+                for l in "${m_clean_lines[@]}"; do
                     sed -i "$(echo -en "/@${i^^}@/i\\\\\n$i: $l")" "$cDEFAULT_SPEC_NAME"
                 done
             fi
@@ -2410,6 +2432,7 @@ else
 
         # build rpm
         echo "building RPM..."
+        cp "$cDEFAULT_SPEC_NAME" "$HOME/$cDEFAULT_SPEC_NAME"
         rpmbuild -bb --build-in-place "$cDEFAULT_SPEC_NAME" --define "_rpmdir $(pwd)/RPMS"
 
         if (( $? != 0 )); then
