@@ -1453,7 +1453,7 @@ __get_config_path() {
         found="$cDEFAULT_CONFIG_NAME"
     fi
 
-    echo -n "$found"
+    echo -n "$(pwd)/$found"
 }
 
 # return unchecked base build path to be used in
