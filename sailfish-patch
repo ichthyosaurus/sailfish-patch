@@ -399,6 +399,7 @@ declare -A check_default_dummies=(
 [Screenshots]=""
 [CompatibleVersions]=""
 [Changelog]=""
+[TestCommands]=""
 )
 
 declare -A default_config_values=(
@@ -422,6 +423,7 @@ declare -A default_config_values=(
 [Screenshots]="m@screenshot-1.png|/home/user/screen-2.png|path/relative/to/config/file/location/screen-3.png"
 [CompatibleVersions]="m@$(echo -n "$check_versions" | sort -V | tr '\n' '|' | sed 's/|$//')"
 [Changelog]="m@1.0.0 ($(date +%F)):|- initial public release"
+[TestCommands]="m@dummy"
 )
 
 check_allowed_in_global_config="Prefix
@@ -706,7 +708,7 @@ if [[ "$check_config" == true ]]; then
         # multi line
         if [[ "$is_single" == false ]]; then
             case "$key" in
-                SourcePackages|Screenshots|Changelog|Requires|Keywords|Conflicts|Obsoletes)
+                SourcePackages|Screenshots|Changelog|Requires|Keywords|Conflicts|Obsoletes|TestCommands)
                     # regular fields
                     is_multiline="$key"
                     is_multiline_at="$count"
@@ -855,6 +857,11 @@ SourcesLink: $(__get_default_config "SourcesLink")
 
 Version: $(__get_default_config "Version")
 Release: $(__get_default_config "Release")
+
+# Add a list of commands below which can be run after deployment.
+# TestCommands:
+# - killall sailfish-office
+# - sailfish-office
 
 # Use @sources to mark all entries of SourcePackages as required.
 Requires:
@@ -2513,6 +2520,29 @@ else
             echo "failed to deploy patch" >&2
         else
             echo "patch deployed"
+        fi
+
+        readarray -t test_commands <<<"$(get_multi_config "$config" "TestCommands")"
+        test_commands_clean=()
+
+        for cmd in "${test_commands[@]}"; do
+            [[ -n "$cmd" ]] && test_commands_clean+=("$cmd")
+        done
+
+        if (( ${#test_commands_clean[@]} > 0 )); then
+            printf "\n%s\n" "test commands:"
+            printf -- "- %s\n" "${test_commands_clean[@]}"
+            echo
+
+            read -n 1 -s -p "run these commands on the device? (y/N)> "
+            if [[ "$REPLY" == "y" ]]; then
+                echo "executing commands via SSH..."
+                ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "$(printf -- " %s ; " "${test_commands_clean[@]}")" || {
+                    echo "warning: test commands failed" >&2 && false
+                }
+            else
+                echo "test commands skipped"
+            fi
         fi
     fi
 
