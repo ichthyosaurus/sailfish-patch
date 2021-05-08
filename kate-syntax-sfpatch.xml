@@ -2,7 +2,7 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 
 <!--
-This file is part of sailfish-patch 2.2.0 (2020-02-28)
+This file is part of sailfish-patch 2.3.0 (2021-04-24)
 
 Copyright (C) 2019-2021  Mirian Margiani
 
@@ -22,23 +22,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <language name="SailfishOS Patch" section="Configuration" extensions="CONFIG" mimetype="" version="1" kateversion="2.4" author="Mirian Margiani (mirian@margiani.ch)" license="GPL">
     <highlighting>
+        <list name="SectionsSingle">
+            <item>Prefix:</item>
+            <item>Category:</item>
+            <item>Maintainer:</item>
+            <item>Summary:</item>
+            <item>DiscussionLink:</item>
+            <item>DonationsLink:</item>
+            <item>SourcesLink:</item>
+            <item>Version:</item>
+            <item>Release:</item>
+        </list>
+        <list name="SectionsMulti">
+            <item>Keywords:</item>
+            <item>Description:</item>
+            <item>Screenshots:</item>
+            <item>CompatibleVersions:</item>
+            <item>Changelog:</item>
+        </list>
+        <list name="SectionsPackages">
+            <item>SourcePackages:</item>
+            <item>Obsoletes:</item>
+            <item>Conflicts:</item>
+        </list>
+        <list name="SectionsPackagesRequires">
+            <!-- requires are handled separately because they allow field references -->
+            <item>Requires:</item>
+        </list>
+        <list name="SectionsTitle">
+            <item>DisplayName:</item>
+        </list>
+        <list name="SectionsPackage">
+            <item>PackageName:</item>
+        </list>
+        <list name="FieldReferences">
+            <item>@sources</item>
+        </list>
         <contexts>
             <context name="patch" attribute="Normal Text" lineEndContext="#stay">
-                <RegExpr attribute="Definition" context="Value"
-                    String="((Prefix|Category|Maintainer|Summary|DiscussionLink|DonationsLink|SourcesLink|Version|Release)[ \t]*:[ \t]*)" column="0"
-                />
-                <RegExpr attribute="Definition" context="Title" String="((DisplayName)[ \t]*:[ \t]*)" column="0" />
-                <RegExpr attribute="Definition" context="Package" String="((PackageName)[ \t]*:[ \t]*)" column="0" />
-                <RegExpr attribute="Definition" context="MultilinePackagesDefinition"
-                    String="((SourcePackages|Requires|Obsoletes|Conflicts)[ \t]*:[ \t]*)" column="0"
-                />
-                <RegExpr attribute="Definition" context="MultilineDefinition"
-                    String="((Keywords|Description|Screenshots|CompatibleVersions|Changelog)[ \t]*:[ \t]*)" column="0"
-                />
-                <DetectChar char="#" attribute="Comment" context="Comment" firstNonSpace="true" />
+                <!-- all rules must endRegion="multiline" -->
+                <keyword attribute="Definition" context="Value" endRegion="multiline" String="SectionsSingle" column="0" />
+                <keyword attribute="Definition" context="MultilineDefinition" endRegion="multiline" beginRegion="multiline" String="SectionsMulti" column="0" />
+                <keyword attribute="Definition" context="MultilinePackagesDefinition" endRegion="multiline" beginRegion="multiline" String="SectionsPackages" column="0" />
+                <keyword attribute="Definition" context="MultilineRequiresDefinition" endRegion="multiline" beginRegion="multiline" String="SectionsPackagesRequires" column="0" />
+                <keyword attribute="Definition" context="Title" endRegion="multiline" String="SectionsTitle" column="0" />
+                <keyword attribute="Definition" context="Package" endRegion="multiline" String="SectionsPackage" column="0" />
+                <DetectChar char="#" attribute="Comment" context="Comment" endRegion="multiline" firstNonSpace="true" />
             </context>
             <context name="Value" attribute="Value" lineEndContext="#pop" ></context>
             <context name="Title" attribute="Title" lineEndContext="#pop" ></context>
+            <context name="FieldReference" attribute="Normal Text" lineEndContext="#pop" >
+                <DetectChar attribute="Definition" context="FieldReference" char="-" column="0" />
+                <keyword attribute="FieldReference" context="#pop#pop" String="FieldReferences" />
+            </context>
             <context name="Package" attribute="Package" lineEndContext="#pop" >
                 <Detect2Chars char="&lt;" char1="=" context="#stay" attribute="Comparison" />
                 <Detect2Chars char="&gt;" char1="=" context="#stay" attribute="Comparison" />
@@ -48,13 +84,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </context>
             <context name="MultilineDefinition" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar attribute="Definition" context="Value" char="-" column="0" />
-                <DetectChar attribute="Definition" context="#pop" char="#" firstNonSpace="true" lookAhead="true" />
-                <RegExpr attribute="Definition" context="#pop" String=".*[ \t]*:[ \t]*" column="0" lookAhead="true" />
+                <DetectChar attribute="Definition" context="#pop" endRegion="multiline" char="#" firstNonSpace="true" lookAhead="true" />
+                <RegExpr attribute="Definition" context="#pop" endRegion="multiline" String=".*" column="0" lookAhead="true" />
             </context>
             <context name="MultilinePackagesDefinition" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar attribute="Definition" context="Package" char="-" column="0" />
-                <DetectChar attribute="Definition" context="#pop" char="#" firstNonSpace="true" lookAhead="true" />
-                <RegExpr attribute="Definition" context="#pop" String=".*[ \t]*:[ \t]*" column="0" lookAhead="true" />
+                <DetectChar attribute="Definition" context="#pop" endRegion="multiline" char="#" firstNonSpace="true" lookAhead="true" />
+                <RegExpr attribute="Definition" context="#pop" endRegion="multiline" String=".*" column="0" lookAhead="true" />
+            </context>
+            <context name="MultilineRequiresDefinition" attribute="Normal Text" lineEndContext="#stay">
+                <RegExpr context="FieldReference" String="-[ \t]*(@sources)" lookAhead="true" />
+                <IncludeRules context="MultilinePackagesDefinition" />
             </context>
             <context name="Comment" attribute="Comment" lineEndContext="#pop">
                 <DetectSpaces />
@@ -64,13 +104,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </context>
         </contexts>
         <itemDatas>
-            <itemData name="Normal Text" defStyleNum="dsError" />
+            <itemData name="Normal Text" defStyleNum="dsError" /> <!-- all unrecognized text is an error -->
             <itemData name="Comment" defStyleNum="dsComment" />
             <itemData name="Definition" defStyleNum="dsBuiltIn" />
             <itemData name="Title" defStyleNum="dsKeyword" />
             <itemData name="Comparison" defStyleNum="dsKeyword" />
             <itemData name="Package" defStyleNum="dsOthers" />
-            <itemData name="Value" defStyleNum="dsNormal" />
+            <itemData name="FieldReference" defStyleNum="dsSpecialString" />
+            <itemData name="Value" defStyleNum="dsNormal" /> <!-- only values may be "normal" text -->
         </itemDatas>
     </highlighting>
 
@@ -78,5 +119,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <comments>
             <comment name="singleLine" start="#" />
         </comments>
+        <keywords weakDeliminator=":">
+            <weakDeliminator>:</weakDeliminator>
+        </keywords>
     </general>
 </language>
