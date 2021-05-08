@@ -1413,11 +1413,43 @@ __get_default_config() { # 1: field/key
 # return unchecked base config path to be used
 # in validator functions
 __get_config_path() {
-    if [[ -f "$(pwd)/build/CONFIG" ]]; then
-        echo "warning: config file in non-standard location found (below 'build')" >/dev/stderr
+    local found=
+    local old_name=CONFIG
+
+    if [[ -f "$cDEFAULT_CONFIG_NAME" ]]; then
+        found="$cDEFAULT_CONFIG_NAME"
     fi
 
-    echo -n "$(pwd)/CONFIG"
+    # Before 2019-07-04 (< 2.0.0), config files were expected below 'build'.
+    # The documentation was fixed only on 2021-05-08 (2.4.0). If we encounter
+    # a config file in the old location, we move it to the new place or fail if
+    # it already exists.
+    if [[ -f "$(pwd)/build/$old_name" ]]; then
+        if [[ -z "$found" ]]; then
+            mv "$(pwd)/build/$old_name" "$cDEFAULT_CONFIG_NAME"
+            found="$cDEFAULT_CONFIG_NAME"
+            echo "warning: config file moved from 'build/$old_name' to './$cDEFAULT_CONFIG_NAME'" >/dev/stderr
+        else
+            echo "warning: another config file found at build/$old_name" >/dev/stderr
+        fi
+    fi
+
+    if [[ -f "$(pwd)/build/$cDEFAULT_CONFIG_NAME" && "$cDEFAULT_CONFIG_NAME" != "$old_name" ]]; then
+        if [[ -z "$found" ]]; then
+            mv "$(pwd)/build/$cDEFAULT_CONFIG_NAME" "$cDEFAULT_CONFIG_NAME"
+            found="$cDEFAULT_CONFIG_NAME"
+            echo "warning: config file moved from 'build/$cDEFAULT_CONFIG_NAME' to './$cDEFAULT_CONFIG_NAME'" >/dev/stderr
+        else
+            echo "warning: another config file found at build/$cDEFAULT_CONFIG_NAME" >/dev/stderr
+        fi
+    fi
+
+    if [[ -z "$found" ]]; then
+        # the path has to be checked outside of this function
+        found="$cDEFAULT_CONFIG_NAME"
+    fi
+
+    echo -n "$found"
 }
 
 # return unchecked base build path to be used in
