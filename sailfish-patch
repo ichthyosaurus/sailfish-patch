@@ -1,7 +1,7 @@
 #!/bin/bash
 # kate: syntax bash
 #
-# sailfish-patch 2.3.0 (2021-04-24)
+# sailfish-patch 2.4.0 (2021-05-08)
 # Copyright (C) 2016  Cornerman (https://github.com/cornerman/gen-sailfish-patch)
 #               2018-2021  Mirian Margiani
 #
@@ -87,7 +87,7 @@ dependencies() { # 1: echo/no-echo
 
 version() {
     echo "\
-sailfish-patch 2.3.0 (2021-04-24)
+sailfish-patch 2.4.0 (2021-05-08)
 Copyright (C) 2018-2021  Mirian Margiani, 2016  Cornerman
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it.
@@ -1383,7 +1383,7 @@ $(echo -n "$check_allowed_in_global_config" | tr '\n' ' ' | sed 's/^/# /g;s/ $//
 # DonationsLink: https://donate.example.org/foobar
 # SourcesLink: https://sources.example.org/foobar
 
-# [keep this line: sailfish-patch 2.3.0 (2021-04-24)]
+# [keep this line: sailfish-patch 2.4.0 (2021-05-08)]
 # kate: syntax SailfishOS Patch
 EOF
     fi
