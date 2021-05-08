@@ -1572,7 +1572,10 @@ if [[ "$create_new" == true ]]; then
     cd "$create_new_name"
 
     git init
-    git checkout -b master
+
+    defaultbranch="$(git config --global init.defaultbranch)"
+    [[ -z "$defaultbranch" ]] && defaultbranch=main
+    git checkout -b "$defaultbranch"
 
     mkdir -p "$(__get_extra_path)"
     mkdir -p "$(__get_original_path)"
