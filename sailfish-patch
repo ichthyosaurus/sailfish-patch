@@ -217,8 +217,10 @@ while [[ $# > 0 ]]; do
             shift
 
             if [[ -z "$1" ]]; then
-                echo "error: no config file name given" >/dev/stderr
-                exit 2
+                [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME" || {
+                    echo "error: no config file name given" >/dev/stderr
+                    exit 2
+                }
             else
                 check_config_name="$1"
             fi
@@ -229,8 +231,10 @@ while [[ $# > 0 ]]; do
             shift
 
             if [[ -z "$1" ]]; then
-                echo "error: no config file name given" >/dev/stderr
-                exit 2
+                [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME" || {
+                    echo "error: no config file name given" >/dev/stderr
+                    exit 2
+                }
             else
                 check_config_name="$1"
             fi
