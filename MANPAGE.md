@@ -165,12 +165,12 @@ To add a new configuration field, you have to update the following places:
 
 - `check_default_dummies` array with default dummy value (if necessary)
 - `default_config_values` array with default configuration values
-  - prefix 's@' for single-line fields and 'm@' for multi-line fields
-  - use '[sm]@dummy' to use the dummy value as default value
+  - prefix `s@` for single-line fields and `m@` for multi-line fields
+  - use `[sm]@dummy` to use the dummy value as default value
 - add the field to the list of required fields
 - and to the single line or multi line check switches
 - add the field to all wizards where it is needed
-- is necessary: add the field to `check_allowed_in_global_config`
+- if necessary: add the field to `check_allowed_in_global_config`
 - add the field to the config file template in `__save_template_config`
 - update the Kate syntax file
 
