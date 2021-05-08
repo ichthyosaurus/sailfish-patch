@@ -46,7 +46,7 @@ if [[ -z "$SF_PATCH_REMOTE_USERNAME" ]]; then
     SF_PATCH_REMOTE_USERNAME="${tmp_SF_PATCH_REMOTE_USERNAME:-nemo}"
 elif [[ -n "$tmp_SF_PATCH_REMOTE_USERNAME" ]]; then
     if [[ "$tmp_SF_PATCH_REMOTE_USERNAME" != "$SF_PATCH_REMOTE_USERNAME" ]]; then
-        echo "warning: different user names for SSH and deployments are not supported" >/dev/stderr
+        echo "warning: different user names for SSH and deployments are not supported" >&2
         echo "         (all commands will use SF_PATCH_REMOTE_USERNAME='$SF_PATCH_REMOTE_USERNAME')"
     fi
 fi
@@ -97,7 +97,7 @@ There is NO WARRANTY, to the extent permitted by law."
 
 if ! dependencies no-echo; then
     version
-    echo -e "\nerror: missing dependencies" >/dev/stderr
+    echo -e "\nerror: missing dependencies" >&2
     exit 255
 fi
 
@@ -218,7 +218,7 @@ while [[ $# > 0 ]]; do
 
             if [[ -z "$1" ]]; then
                 [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME" || {
-                    echo "error: no config file name given" >/dev/stderr
+                    echo "error: no config file name given" >&2
                     exit 2
                 }
             else
@@ -232,7 +232,7 @@ while [[ $# > 0 ]]; do
 
             if [[ -z "$1" ]]; then
                 [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME" || {
-                    echo "error: no config file name given" >/dev/stderr
+                    echo "error: no config file name given" >&2
                     exit 2
                 }
             else
@@ -245,7 +245,7 @@ while [[ $# > 0 ]]; do
             shift
 
             if [[ -z "$1" ]]; then
-                echo "error: no name for the new patch directory given" >/dev/stderr
+                echo "error: no name for the new patch directory given" >&2
                 exit 1
             else
                 create_new_name="$1"
@@ -261,10 +261,10 @@ while [[ $# > 0 ]]; do
             shift
 
             if [[ -z "$1" ]]; then
-                echo "error: no config file for the import given" >/dev/stderr
+                echo "error: no config file for the import given" >&2
                 exit 1
             elif [[ ! -f "$1" ]]; then
-                echo "error: config file to be imported not found" >/dev/stderr
+                echo "error: config file to be imported not found" >&2
                 exit 1
             else
                 # save absolute path
@@ -273,10 +273,10 @@ while [[ $# > 0 ]]; do
 
             shift
             if [[ -z "$1" ]]; then
-                echo "error: no tarball for the import given" >/dev/stderr
+                echo "error: no tarball for the import given" >&2
                 exit 1
             elif [[ ! -f "$1" ]]; then
-                echo "error: tarball to be imported not found" >/dev/stderr
+                echo "error: tarball to be imported not found" >&2
                 exit 1
             else
                 # save absolute path
@@ -285,7 +285,7 @@ while [[ $# > 0 ]]; do
         ;;
         -p|--publish-ssh)
             if [[ "$publish_via_ssh_possible" == false ]]; then
-                echo "error: environment not set up correctly for publishing via ssh" >/dev/stderr
+                echo "error: environment not set up correctly for publishing via ssh" >&2
                 exit 1
             else
                 publish_via_ssh=true
@@ -454,11 +454,11 @@ if [[ "$list_releases" == true ]]; then
     which "column" 2> /dev/null >&2 && _have_column=true
 
     if [[ "$_have_curl" != true ]]; then
-        echo "error: 'curl' is not available, cannot retrieve list of all SailfishOS releases" >/dev/stderr
+        echo "error: 'curl' is not available, cannot retrieve list of all SailfishOS releases" >&2
         error=true
     else
         if ! _all_releases="$(curl -sS https://coderus.openrepos.net/whitesoft/sailversion)"; then
-            echo "error: failed to load the list of all releases from https://coderus.openrepos.net/whitesoft/sailversion" >/dev/stderr
+            echo "error: failed to load the list of all releases from https://coderus.openrepos.net/whitesoft/sailversion" >&2
             error=true
         else
             _head_line="Script?;Version;Codename;Date"
@@ -472,7 +472,7 @@ if [[ "$list_releases" == true ]]; then
                         sed 's/^;/ ;/g' | column -s ';' -t
             else
                 # print unformatted
-                echo "note: install 'column' to get formatted output" >/dev/stderr
+                echo "note: install 'column' to get formatted output" >&2
                 join -t',' -a 1 -a 2 -j 1 -o 1.2,2.1,2.2,2.3 \
                     <(echo "$check_versions" | sed 's/$/,yes/g' | sort) <(cho "$_all_releases" | sed 's/ - /,/g' | sort)  |\
                         sed "1 s/^/$_head_line\n/;"
@@ -500,7 +500,7 @@ fi
 
 if [[ "$check_config" == true ]]; then
     if [[ ! -f "$check_config_name" ]]; then
-        echo "error: could not find configuration file" >/dev/stderr
+        echo "error: could not find configuration file" >&2
         exit 2
     fi
 
@@ -515,7 +515,7 @@ if [[ "$check_config" == true ]]; then
         fi
 
         if echo "$value" | grep -Pqoe "@[^ ]+@"; then
-            echo "error: field '$key' is not configured ($value; line $line)" >/dev/stderr
+            echo "error: field '$key' is not configured ($value; line $line)" >&2
             return 1
         fi
 
@@ -523,7 +523,7 @@ if [[ "$check_config" == true ]]; then
             return 0
         elif echo "${check_default_dummies[$key]}" | sed 's/|/\n/g' |\
                 grep -Pqoe "^$(echo "$value" | sed 's/[][\.|$(){}?+*^]/\\&/g')"; then
-            echo "error: field '$key' still contains a dummy value (line $line)" >/dev/stderr
+            echo "error: field '$key' still contains a dummy value (line $line)" >&2
             return 1
         else
             return 0
@@ -558,14 +558,14 @@ if [[ "$check_config" == true ]]; then
             # BEGIN value checks for multi line fields
             __check_package_specification() { # 1: error name
                 if ! echo "$value" | grep -Pqe "^([^: ]+:|)[^: ]+( (<|>|=|<=|>=) .+|)$"; then
-                    echo "error: invalid $is_multiline package specification '$value' (line $count)" >/dev/stderr
+                    echo "error: invalid $is_multiline package specification '$value' (line $count)" >&2
                     error=true # global
                 fi
             }
 
             if [[ "$is_multiline" == "Screenshots" ]]; then
                 if [[ ! -f "$value" ]] && [[ ! -f "$(dirname "$check_config_name")/$value" ]]; then
-                    echo "error: screenshot file '$value' not found (line $count)" >/dev/stderr
+                    echo "error: screenshot file '$value' not found (line $count)" >&2
                     error=true
                 else
                     screen="$value"
@@ -574,12 +574,12 @@ if [[ "$check_config" == true ]]; then
                     fi
 
                     if (( "$(du -bs "$screen" | grep -Poe '^\d+')" >= 500000 )); then
-                        echo "note: screenshot file '$value' is quite large; did you optimize all PNGs using '-S'?" >/dev/stderr
+                        echo "note: screenshot file '$value' is quite large; did you optimize all PNGs using '-S'?" >&2
                     fi
                 fi
             elif [[ "$is_multiline" == "CompatibleVersions" ]]; then
                 if ! echo "$check_versions" | grep -Pqoe "^$value"; then
-                    echo "error: invalid version '$value' (line $count)" >/dev/stderr
+                    echo "error: invalid version '$value' (line $count)" >&2
                     error=true
                 fi
             elif [[    "$is_multiline" == "SourcePackages"
@@ -608,7 +608,7 @@ if [[ "$check_config" == true ]]; then
                 echo "warning: empty multi-line field '$is_multiline' at line $is_multiline_at"
 
                 if [[ "$is_multiline_required" == true ]]; then
-                    echo "error: required field '$key' is empty" >/dev/stderr
+                    echo "error: required field '$key' is empty" >&2
                     error=true
                 fi
             fi
@@ -631,7 +631,7 @@ if [[ "$check_config" == true ]]; then
                     # special rules
                     if [[ "$key" == "Prefix" ]]; then
                         if [[ "$value" != "/"* ]]; then
-                            echo "error: prefix must be an absolute path ($value; line $count)" >/dev/stderr
+                            echo "error: prefix must be an absolute path ($value; line $count)" >&2
                             error=true
                         fi
                     fi
@@ -640,62 +640,62 @@ if [[ "$check_config" == true ]]; then
             DisplayName|Maintainer|Summary)
                 # must not be empty
                 if [[ -z "$value" ]]; then
-                    echo "error: required field '$key' is empty" >/dev/stderr
+                    echo "error: required field '$key' is empty" >&2
                     error=true
                 fi
             ;;
             PackageName)
                 # must not be empty
                 if [[ -z "$value" ]]; then
-                    echo "error: required field '$key' is empty" >/dev/stderr
+                    echo "error: required field '$key' is empty" >&2
                     error=true
                 fi
                 # needs special rules
                 if echo "$value" | grep -Pqoe "[^a-zA-Z0-9-_]"; then
-                    echo "error: package name contains invalid characters (line $count)" >/dev/stderr
+                    echo "error: package name contains invalid characters (line $count)" >&2
                     echo "       allowed are: a-z, A-Z, 0-9, -, _ (no spaces)"
                     error=true
                 elif echo "$value" | grep -Pqoe "^[-_]"; then
-                    echo "error: package name must not start with '-' or '_' (line $count)" >/dev/stderr
+                    echo "error: package name must not start with '-' or '_' (line $count)" >&2
                     error=true
                 elif [[ "$value" == "${check_default_dummies[$key]}" ]]; then
-                    echo "error: package name not set (line $count)" >/dev/stderr
+                    echo "error: package name not set (line $count)" >&2
                     error=true
                 fi
             ;;
             Category)
                 # must not be empty
                 if [[ -z "$value" ]]; then
-                    echo "error: required field '$key' is empty" >/dev/stderr
+                    echo "error: required field '$key' is empty" >&2
                     error=true
                 fi
                 # needs special rules
                 if ! echo "$check_categories" | grep -Pqoe "^$value"; then
-                    echo "error: invalid category '$value' on line $count" >/dev/stderr
+                    echo "error: invalid category '$value' on line $count" >&2
                     error=true
                 fi
             ;;
             Version)
                 # must not be empty
                 if [[ -z "$value" ]]; then
-                    echo "error: required field '$key' is empty" >/dev/stderr
+                    echo "error: required field '$key' is empty" >&2
                     error=true
                 fi
                 # needs special rules
                 if ! echo "$value" | grep -Pqoe '^[0-9]+\.[0-9]+\.[0-9]+'; then
-                    echo "error: version number must consist of three numbers separated by dots (X.Y.Z; line $count)" >/dev/stderr
+                    echo "error: version number must consist of three numbers separated by dots (X.Y.Z; line $count)" >&2
                     error=true
                 fi
             ;;
             Release)
                 # must not be empty
                 if [[ -z "$value" ]]; then
-                    echo "error: required field '$key' is empty" >/dev/stderr
+                    echo "error: required field '$key' is empty" >&2
                     error=true
                 fi
                 # needs special rules
                 if ! echo "$value" | grep -Pqoe '^[1-9][0-9]*'; then
-                    echo "error: release number must be exactly one number without leading zeros (XYZ; line $count)" >/dev/stderr
+                    echo "error: release number must be exactly one number without leading zeros (XYZ; line $count)" >&2
                     error=true
                 fi
             ;;
@@ -717,7 +717,7 @@ if [[ "$check_config" == true ]]; then
                     is_multiline_at="$count"
                     is_multiline_required=true
                 ;;
-                *)  echo "error: invalid key '$key' on line $count" >/dev/stderr
+                *)  echo "error: invalid key '$key' on line $count" >&2
                     error=true
                 ;;
             esac
@@ -728,7 +728,7 @@ if [[ "$check_config" == true ]]; then
         fi
 
         if printf "%s\n" "${keys_found[@]}" | grep -Pqoe "^$key"; then
-            echo "error: field '$key' is defined more than once (line $count)" >/dev/stderr
+            echo "error: field '$key' is defined more than once (line $count)" >&2
             error=true
         else
             keys_found+=("$key")
@@ -738,7 +738,7 @@ if [[ "$check_config" == true ]]; then
     # check for required fields
     for r in DisplayName PackageName Category Maintainer Summary Version Release Description CompatibleVersions; do
         if ! printf "%s\n" "${keys_found[@]}"  | grep -Pqoe "^$r"; then
-            echo "error: required field '$r' is missing" >/dev/stderr
+            echo "error: required field '$r' is missing" >&2
             error=true
         fi
     done
@@ -755,12 +755,12 @@ if [[ "$check_config" == true ]]; then
         select_range "^${to_check_latest//./\.}" "^[^$to_check_latest_major]")"
 
     if [[ "$upstream_latest_major" != "$to_check_latest_major" ]]; then
-        echo "note: this patch does not support the latest SailfishOS version (v$to_check_latest_major vs v$upstream_latest_major)" >/dev/stderr
+        echo "note: this patch does not support the latest SailfishOS version (v$to_check_latest_major vs v$upstream_latest_major)" >&2
     fi
 
     if [[ -n "$upstream_more_recent" ]]; then
-        echo "note: there are newer releases for this major SailfishOS version available" >/dev/stderr
-        echo -n "$upstream_more_recent" | sed 's/^/- /g' | tee /dev/stderr | xclip -selection c && echo >/dev/stderr
+        echo "note: there are newer releases for this major SailfishOS version available" >&2
+        echo -n "$upstream_more_recent" | sed 's/^/- /g' | tee /dev/stderr | xclip -selection c && echo >&2
 
         if [[ "$check_update_config" == true ]]; then
             # update CompatibleVersions
@@ -790,7 +790,7 @@ if [[ "$check_config" == true ]]; then
                     "$check_config_name"
             fi
         else
-            echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >/dev/stderr
+            echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >&2
         fi
     fi
 
@@ -1331,14 +1331,14 @@ config_checker="$0"
 require_config() { # 1: expected config file location
     local config="$1"
     if [[ ! -f "$config" ]]; then
-        echo "error: could not find config file" >/dev/stderr
+        echo "error: could not find config file" >&2
         return 1
     else
         "$config_checker" --check-config "$config"
 
         if (( $? != 0 )); then
-            echo "error: config file contains errors" >/dev/stderr
-            echo "       please check the output above and try again" >/dev/stderr
+            echo "error: config file contains errors" >&2
+            echo "       please check the output above and try again" >&2
             return 1
         fi
     fi
@@ -1349,7 +1349,7 @@ require_config() { # 1: expected config file location
 # NOTE place above __save_template_config?
 require_global_config() {
     if [[ -z "$SF_PATCH_GLOBAL_DEFAULTS" ]]; then
-        echo "internal error: \$SF_PATCH_GLOBAL_DEFAULTS is empty" >/dev/stderr
+        echo "internal error: \$SF_PATCH_GLOBAL_DEFAULTS is empty" >&2
         return 1
     fi
 
@@ -1410,7 +1410,7 @@ __get_default_config() { # 1: field/key
             echo "$value"
         fi
     else
-        echo "error: default value for invalid key requested ($1)" >/dev/stderr
+        echo "error: default value for invalid key requested ($1)" >&2
         return 1
     fi
 }
@@ -1433,9 +1433,9 @@ __get_config_path() {
         if [[ -z "$found" ]]; then
             mv "$(pwd)/build/$old_name" "$cDEFAULT_CONFIG_NAME"
             found="$cDEFAULT_CONFIG_NAME"
-            echo "warning: config file moved from 'build/$old_name' to './$cDEFAULT_CONFIG_NAME'" >/dev/stderr
+            echo "warning: config file moved from 'build/$old_name' to './$cDEFAULT_CONFIG_NAME'" >&2
         else
-            echo "warning: another config file found at build/$old_name" >/dev/stderr
+            echo "warning: another config file found at build/$old_name" >&2
         fi
     fi
 
@@ -1443,9 +1443,9 @@ __get_config_path() {
         if [[ -z "$found" ]]; then
             mv "$(pwd)/build/$cDEFAULT_CONFIG_NAME" "$cDEFAULT_CONFIG_NAME"
             found="$cDEFAULT_CONFIG_NAME"
-            echo "warning: config file moved from 'build/$cDEFAULT_CONFIG_NAME' to './$cDEFAULT_CONFIG_NAME'" >/dev/stderr
+            echo "warning: config file moved from 'build/$cDEFAULT_CONFIG_NAME' to './$cDEFAULT_CONFIG_NAME'" >&2
         else
-            echo "warning: another config file found at build/$cDEFAULT_CONFIG_NAME" >/dev/stderr
+            echo "warning: another config file found at build/$cDEFAULT_CONFIG_NAME" >&2
         fi
     fi
 
@@ -1467,7 +1467,7 @@ __get_build_path() {
 # assumes build path and config have been checked before
 __get_package_path() { # 1: type (rpm/tarball)
     if [[ "$1" != "rpm" && "$1" != "tarball" ]]; then
-        echo "internal error: invalid package type requested" >/dev/stderr
+        echo "internal error: invalid package type requested" >&2
         return 1
     fi
 
@@ -1515,9 +1515,9 @@ require_build_config() {
     # require build dir
     local build_dir="$(__get_build_path)"
     if [[ ! -d "$build_dir" ]]; then
-        echo "note: creating new build directory" >/dev/stderr
+        echo "note: creating new build directory" >&2
         mkdir -p "$build_dir" || {
-            echo "error: failed to create new build directory" >/dev/stderr
+            echo "error: failed to create new build directory" >&2
             return 1
         }
     fi
@@ -1534,7 +1534,7 @@ require_current_package() { # 1: type (rpm/tarball)
     local package="$(__get_package_path "$1")"
 
     if [[ -z "$package" ]]; then
-        echo "error: no $1 found" >/dev/stderr
+        echo "error: no $1 found" >&2
         return 1
     fi
 
@@ -1608,7 +1608,7 @@ EOF
 
 if [[ "$create_new" == true ]]; then
     if [[ -e "$create_new_name" ]]; then
-        echo "error: a file or directory with the name '$create_new_name' already exists" >/dev/stderr
+        echo "error: a file or directory with the name '$create_new_name' already exists" >&2
         exit 1
     fi
 
@@ -1696,7 +1696,7 @@ else
         [[ -n "$1" ]] && packages_backup="$packages-old-$1"
 
         if ! rm -rf "$original"; then
-            echo "error: failed to remove old original sources" >/dev/stderr
+            echo "error: failed to remove old original sources" >&2
             return 1
         fi
 
@@ -1713,12 +1713,12 @@ else
         fi
 
         if ! mkdir -p "$extract"; then
-            echo "error: failed to prepare temporary files" >/dev/stderr
+            echo "error: failed to prepare temporary files" >&2
             return 1
         fi
 
         if ! mkdir -p "$packages"; then
-            echo "error: failed to prepare temporary files" >/dev/stderr
+            echo "error: failed to prepare temporary files" >&2
             return 1
         fi
 
@@ -1748,7 +1748,7 @@ else
                 local local_file="$update_local_sources/$source.rpm"
 
                 if [[ ! -f "$local_file" ]]; then
-                    echo "error: local package file '$local_file' not found" >/dev/stderr
+                    echo "error: local package file '$local_file' not found" >&2
                     return 1
                 else
                     cp --backup=t "$local_file" "$file"
@@ -1760,7 +1760,7 @@ else
                 file="$packages/${source}.rpm"
 
                 if [[ -z "$user" ]]; then
-                    echo "error: failed to determine OpenRepos user for '$source'" >/dev/stderr
+                    echo "error: failed to determine OpenRepos user for '$source'" >&2
                     return 1
                 fi
 
@@ -1768,7 +1768,7 @@ else
                 local html=
                 local repo_status="$(curl -LI "$repo_url" 2>/dev/null | head -n 1 | cut -d$' ' -f2)"
                 if [[ "$repo_status" != 2[0-9][0-9] ]]; then
-                    echo "error: failed to download user \"$user\"'s OpenRepos repository for '$source' (code $repo_status)" >/dev/stderr
+                    echo "error: failed to download user \"$user\"'s OpenRepos repository for '$source' (code $repo_status)" >&2
                     return 1
                 else
                     html="$(curl "$repo_url")"
@@ -1781,7 +1781,7 @@ else
                     sort --version-sort -u)"
 
                 if (( $? != 0 )); then
-                    echo "error: failed to extract OpenRepos repository listing for '$source'" >/dev/stderr
+                    echo "error: failed to extract OpenRepos repository listing for '$source'" >&2
                     return 1
                 fi
 
@@ -1801,7 +1801,7 @@ else
 
                 cd "$packages"
                 if ! curl "${repo_url%/}/$last_selected" -o "${source}.rpm"; then
-                    echo "error: failed to download package '$source'" >/dev/stderr
+                    echo "error: failed to download package '$source'" >&2
                     cd "$base"
                     return 1
                 fi
@@ -1809,8 +1809,8 @@ else
             else
                 # assume Jolla store
                 if [[ -z "$SF_PATCH_SSH_TARGET" ]]; then
-                    echo "error: ssh target not set" >/dev/stderr
-                    echo "       cannot fetch packages from official repos without ssh access to the device" >/dev/stderr
+                    echo "error: ssh target not set" >&2
+                    echo "       cannot fetch packages from official repos without ssh access to the device" >&2
                     return 1
                 fi
 
@@ -1820,21 +1820,21 @@ else
                     "rm -rf '$remote_temp_dir'; mkdir -p '$remote_temp_dir' && pkcon download '$remote_temp_dir' '$source'"
 
                 if (( $? != 0 )); then
-                    echo "error: failed to download package '$source' from official repos via ssh" >/dev/stderr
+                    echo "error: failed to download package '$source' from official repos via ssh" >&2
                     return 1
                 fi
 
                 scp "$SF_PATCH_REMOTE_USERNAME@$SF_PATCH_SSH_TARGET:$remote_temp_dir/${source}*" "$file"
 
                 if (( $? != 0 )); then
-                    echo "error: failed to transfer downloaded package '$source' from the device" >/dev/stderr
+                    echo "error: failed to transfer downloaded package '$source' from the device" >&2
                     return 1
                 fi
             fi
 
             if [[ -n "$version" && -n "$version_action" ]]; then
                 if ! __update_is_valid_version "$version_action" "$(rpm -qp --queryformat '%{VERSION}' "$file" 2>/dev/null)" "$version"; then
-                    echo "error: could not fetch appropriate version of '$source' ($version$version_action$(rpm -qp --queryformat '%{VERSION}' "$file"))" >/dev/stderr
+                    echo "error: could not fetch appropriate version of '$source' ($version$version_action$(rpm -qp --queryformat '%{VERSION}' "$file"))" >&2
                     return 1
                 fi
             fi
@@ -1842,7 +1842,7 @@ else
             cd "$extract"
 
             if ! rpm2cpio "$file" | cpio -idmv; then
-                echo "error: failed to extract '$file'" >/dev/stderr
+                echo "error: failed to extract '$file'" >&2
                 cd "$base"
                 return 1
             fi
@@ -1856,7 +1856,7 @@ else
         prefix="$(get_single_config "$config" "Prefix" "/")"
 
         if [[ ! -d ".$prefix" ]]; then
-            echo "error: invalid prefix $prefix" >/dev/stderr
+            echo "error: invalid prefix $prefix" >&2
             cd "$base"
             return 1
         fi
@@ -1885,12 +1885,12 @@ else
         local patched="$(__get_patched_path)"
 
         if ! rm -rf "$patched"; then
-            echo "error: failed to remove old patched sources" >/dev/stderr
+            echo "error: failed to remove old patched sources" >&2
             return 1
         fi
 
         if [[ ! -d "$original" ]]; then
-            echo "error: failed to copy sources - files not found" >/dev/stderr
+            echo "error: failed to copy sources - files not found" >&2
             return 1
         fi
 
@@ -1910,8 +1910,8 @@ else
         local patched_backup="$patched.tmp"
 
         cp -r "$original" "$original_backup" && cp -r "$patched" "$patched_backup" || {
-            echo "fatal: failed to create temporary copy of pre-patched files" >/dev/stderr
-            echo "error: manual cleanup required" >/dev/stderr
+            echo "fatal: failed to create temporary copy of pre-patched files" >&2
+            echo "error: manual cleanup required" >&2
             return 1
         }
 
@@ -1928,7 +1928,7 @@ else
         sed "$1" -Ee "s@(--git|---|\+\+\+) a${prefix}@\1 a${original}/@g;
                    s@(--git|---|\+\+\+) b${prefix}@\1 b${patched}/@g;
                    s@(--git a/.*) b${prefix}@\1 b${patched}/@g" > "$tmp_diff" || {
-            echo "error: failed to update diff paths" >/dev/stderr
+            echo "error: failed to update diff paths" >&2
             __update_apply_diff_rollback
             return 1
         }
@@ -1940,20 +1940,20 @@ else
         local failed=false
         if [[ "$patch_utility" == "git" ]]; then
             if ! git apply --reject --binary -p "$strip" -v "$tmp_diff"; then
-                echo "error: failed to apply diff" >/dev/stderr
+                echo "error: failed to apply diff" >&2
                 echo -n "patch command: "
                 echo "git apply --reject --binary -p '$strip' -v '$tmp_diff'" | tee "$patch_command_file"
                 failed=true
             fi
         elif [[ "$patch_utility" == "patch" ]]; then
             if ! patch -p"$strip" -u <"$tmp_diff"; then
-                echo "error: failed to apply diff" >/dev/stderr
+                echo "error: failed to apply diff" >&2
                 echo -n "patch command: "
                 echo "patch -p'$strip' -u <'$tmp_diff'" | tee "$patch_command_file"
                 failed=true
             fi
         else
-            echo "internal error: unknown patch utility '$patch_utility'" >/dev/stderr
+            echo "internal error: unknown patch utility '$patch_utility'" >&2
             failed=true
         fi
 
@@ -1966,9 +1966,9 @@ else
 
     if [[ "$import" == true ]]; then
         if git rev-parse --git-dir 2>/dev/null; then
-            echo "error: already inside a Git repository;" >/dev/stderr
-            echo "       sailfish-patch heavily relies on having only one" >/dev/stderr
-            echo "       patch per repo" >/dev/stderr
+            echo "error: already inside a Git repository;" >&2
+            echo "       sailfish-patch heavily relies on having only one" >&2
+            echo "       patch per repo" >&2
             exit 1
         fi
 
@@ -1996,16 +1996,16 @@ else
             tar -xzvf "$import_source"
 
             if [[ ! -f "unified_diff.patch" ]]; then
-                echo "error: could not find diff file in tarball" >/dev/stderr
+                echo "error: could not find diff file in tarball" >&2
                 exit 1
             fi
 
             cd "$base"
             import_source="$extract_dir/unified_diff.patch"
         else
-            echo "error: unrecognized source file" >/dev/stderr
-            echo "       Any patch file, or a patch named 'unified_diff.patch' inside" >/dev/stderr
-            echo "       a tar archive are supported." >/dev/stderr
+            echo "error: unrecognized source file" >&2
+            echo "       Any patch file, or a patch named 'unified_diff.patch' inside" >&2
+            echo "       a tar archive are supported." >&2
             exit 1
         fi
 
@@ -2031,12 +2031,12 @@ else
         # We only allow changed or untracked files that are not in the original/ or patched/ directories.
         if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^.. (original|patched)\//!d; /^\?\? /d' | tr '\0' '.')" ]]; then
             tmp_msg="uncommitted source changes found, check original/ and patched/"
-            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >/dev/stderr; exit 1; }
+            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >&2; exit 1; }
         fi
 
         if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^\?\? (original|patched)\//!d' | tr '\0' '.')" ]]; then
             tmp_msg="untracked source files found, check original/ and patched/"
-            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >/dev/stderr; exit 1; }
+            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >&2; exit 1; }
         fi
 
         require_config "$(__get_config_path)" || exit 1
@@ -2046,11 +2046,11 @@ else
         needs_sources=true
         if (( ${#sources[@]} == 1 )) && [[ -z "$(trim "${sources[0]}")" ]]; then
             if [[ -d "$original" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
-                echo "error: no source packages specified but original source files found" >/dev/stderr
-                echo "error: automatic update not possible" >/dev/stderr
+                echo "error: no source packages specified but original source files found" >&2
+                echo "error: automatic update not possible" >&2
                 exit 1
             else
-                echo "note: no source packages specified" >/dev/stderr
+                echo "note: no source packages specified" >&2
                 needs_sources=false
                 mkdir -p "$original"
             fi
@@ -2083,26 +2083,26 @@ else
 
             if [[ ! -d "$original" && ! -d "$patched" && ! -f "$working_diff" ]]; then
                 if [[ -f "unified_diff.patch" ]]; then
-                    echo "note: bootstrapping distribution package" >/dev/stderr
+                    echo "note: bootstrapping distribution package" >&2
                     diff_file="unified_diff.patch"
                     type=dist_bootstrap
                 else
-                    echo "note: bootstrapping an empty package" >/dev/stderr
+                    echo "note: bootstrapping an empty package" >&2
                     type=initial_bootstrap
                 fi
             elif [[ ! -d "$original" ]]; then
-                echo "error: original files missing" >/dev/stderr
+                echo "error: original files missing" >&2
                 exit 1
             elif [[ ! -d "$patched" ]]; then
-                echo "error: patched files missing" >/dev/stderr
+                echo "error: patched files missing" >&2
                 exit 1
             elif [[ -f "$working_diff" ]]; then
                 type=retry
-                echo "note: automatic updating failed" >/dev/stderr
-                echo "      Make sure both source directories contain updated but unchanged sources." >/dev/stderr
-                echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >/dev/stderr
-                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >/dev/stderr
-                echo "      If it fails again, you can checkout the updated sources and try again." >/dev/stderr
+                echo "note: automatic updating failed" >&2
+                echo "      Make sure both source directories contain updated but unchanged sources." >&2
+                echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >&2
+                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >&2
+                echo "      If it fails again, you can checkout the updated sources and try again." >&2
                 exit 0
             fi
 
@@ -2121,10 +2121,10 @@ else
 
                     if [[ "$type" == dist_bootstrap ]]; then
                         if ! __update_apply_diff "$diff_file"; then
-                            echo "error: failed to apply patch to downloaded sources" >/dev/stderr
-                            echo "       Both source directories now contain fresh but unchanged sources." >/dev/stderr
-                            echo "       The original patch is still available in '$diff_file' and you can" >/dev/stderr
-                            echo "       try applying it manually to the files in '$patched'." >/dev/stderr
+                            echo "error: failed to apply patch to downloaded sources" >&2
+                            echo "       Both source directories now contain fresh but unchanged sources." >&2
+                            echo "       The original patch is still available in '$diff_file' and you can" >&2
+                            echo "       try applying it manually to the files in '$patched'." >&2
                             exit 1
                         else
                             __create_diff "$(__get_config_path)" "$updated_diff"
@@ -2168,11 +2168,11 @@ else
                     fi
 
                     __update_apply_diff "$diff_file" && rm -f "$working_diff" || {
-                        echo "note: the original patch has been saved to '$diff_file'" >/dev/stderr
-                        echo "      Both source directories now contain updated but unchanged sources." >/dev/stderr
-                        echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >/dev/stderr
-                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >/dev/stderr
-                        echo "      If it fails again, you can checkout the updated sources and try again." >/dev/stderr
+                        echo "note: the original patch has been saved to '$diff_file'" >&2
+                        echo "      Both source directories now contain updated but unchanged sources." >&2
+                        echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >&2
+                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >&2
+                        echo "      If it fails again, you can checkout the updated sources and try again." >&2
                         exit 1
                     }
 
@@ -2184,10 +2184,10 @@ else
                         echo "success: old and new patch files are identical"
                         echo "         you can remove the backup copies now"
                     else
-                        echo "warning: updated patch file has changed" >/dev/stderr
+                        echo "warning: updated patch file has changed" >&2
                     fi
                 ;;
-                *) echo "error: invalid update type '$type'" >/dev/stderr && exit 1;;
+                *) echo "error: invalid update type '$type'" >&2 && exit 1;;
             esac
         fi
     fi
@@ -2267,11 +2267,11 @@ else
 
         # require original files
         if [[ ! -d "$original" ]]; then
-            echo "note: creating empty original files directory" >/dev/stderr
+            echo "note: creating empty original files directory" >&2
             mkdir -p "$original" || {
-                echo "error: failed to create empty original files directory" >/dev/stderr
-                echo "       Even if the patch only adds files, the 'original'" >/dev/stderr
-                echo "       directory has to be present." >/dev/stderr
+                echo "error: failed to create empty original files directory" >&2
+                echo "       Even if the patch only adds files, the 'original'" >&2
+                echo "       directory has to be present." >&2
                 exit 1
             }
         fi
@@ -2279,11 +2279,11 @@ else
         if [[ ! -d "$patched" && ! -d "$extra_dir" ]]; then
             # patches may only add a settings page, so the patched directory is only
             # a hard requirement when no extra files are added
-            echo "error: missing patched files directory" >/dev/stderr
+            echo "error: missing patched files directory" >&2
             exit 1
         else
             mkdir -p "$patched" || {
-                echo "error: failed to create empty patched files directory" >/dev/stderr
+                echo "error: failed to create empty patched files directory" >&2
                 exit 1
             }
         fi
@@ -2291,29 +2291,29 @@ else
         # verify extra files (imported later, so we don't have to clean up if something fails)
         if [[ -d "$extra_dir" ]]; then
             if (( $(find "$extra_dir" -mindepth 1 -type d | wc -l) > 0 )); then
-                echo "error: subdirectories are not allowed for extra files" >/dev/stderr
+                echo "error: subdirectories are not allowed for extra files" >&2
                 exit 1
             fi
 
             if find "$extra_dir" -type f -print0 | tr -d '\n' | tr '\0' '\n' | grep -Pqve "\.(qml|js|png|svg|qm)$"; then
-                echo "error: unsupported extra files found" >/dev/stderr
-                echo "       Only files with the following extensions are allowed:" >/dev/stderr
-                echo "          .qml, .js, .png, .svg, .qm" >/dev/stderr
+                echo "error: unsupported extra files found" >&2
+                echo "       Only files with the following extensions are allowed:" >&2
+                echo "          .qml, .js, .png, .svg, .qm" >&2
                 exit 1
             fi
 
             langs="$(find "$extra_dir" -type f -iname "*.qm" -execdir printf "%s\0" {} \; | tr '\n' '%' | tr '\0' '\n')"
             if [[ -n "$langs" ]] && echo "$langs" | grep -Pqve "^./translation_[a-zA-Z_]{2,5}.qm$"; then
-                echo "error: invalid translation file names found" >/dev/stderr
-                echo "       Translation files must follow the format 'translation_LANG.qm'." >/dev/stderr
+                echo "error: invalid translation file names found" >&2
+                echo "       Translation files must follow the format 'translation_LANG.qm'." >&2
                 exit 1
             fi
 
             qmls="$(find "$extra_dir" -type f -iname "*.qml" -print0 | tr '\n' '\t' | tr '\0' '\n')"
             if [[ -n "$qmls" ]] && ! echo "$qmls" | grep -Pqe '/main.qml$'; then
-                echo "error: extra QML files found but no main file" >/dev/stderr
-                echo "       A file named 'main.qml' must be provided" >/dev/stderr
-                echo "       when including extra QML files." >/dev/stderr
+                echo "error: extra QML files found but no main file" >&2
+                echo "       A file named 'main.qml' must be provided" >&2
+                echo "       when including extra QML files." >&2
                 exit 1
             fi
         fi
@@ -2436,7 +2436,7 @@ else
         rpmbuild -bb --build-in-place "$cDEFAULT_SPEC_NAME" --define "_rpmdir $(pwd)/RPMS"
 
         if (( $? != 0 )); then
-            echo "error: failed to build RPM" >/dev/stderr
+            echo "error: failed to build RPM" >&2
         else
             mv --backup=t RPMS/**/*.rpm "$build_dir"
             echo "success: RPM built"
@@ -2449,7 +2449,7 @@ else
         tar -czvf "$tarball" *
 
         if (( $? != 0 )); then
-            echo "error: failed to build tarball" >/dev/stderr
+            echo "error: failed to build tarball" >&2
         else
             echo "success: tarball built"
             mv --backup=t "$tarball" "$build_dir"
@@ -2461,7 +2461,7 @@ else
             mv --backup=t "$package" "$build_dir"
 
         if (( $? != 0 )); then
-            echo "error: failed to build code distribution package" >/dev/stderr
+            echo "error: failed to build code distribution package" >&2
         else
             echo "success: code distribution package built"
         fi
@@ -2478,7 +2478,7 @@ else
         echo "package: $rpm"
 
         if [[ ! -f "$SF_PATCH_PASSFILE" ]]; then
-            echo "error: passphrase file not found" >/dev/stderr
+            echo "error: passphrase file not found" >&2
             exit 2
         fi
 
@@ -2487,16 +2487,16 @@ else
 
         scp "$rpm" "$SF_PATCH_REMOTE_USERNAME@$SF_PATCH_SSH_TARGET:$SF_PATCH_REMOTE_PATH"
         { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -u '$package_name'"; } || {
-            echo "error: failed to ensure patch is unapplied" >/dev/stderr && false
+            echo "error: failed to ensure patch is unapplied" >&2 && false
         }; } &&\
         { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "if rpm -q '$package_name'; then devel-su rpm --erase '$package_name'; else true; fi;"; } || {
-            echo "error: failed to ensure patch package is not installed" >/dev/stderr && false
+            echo "error: failed to ensure patch package is not installed" >&2 && false
         }; } &&\
         { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su rpm -ivh '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"; } || {
-            echo "error: failed to install patch package" >/dev/stderr && false
+            echo "error: failed to install patch package" >&2 && false
         }; } &&\
         { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"; } || {
-            echo "error: failed to apply patch" >/dev/stderr && false
+            echo "error: failed to apply patch" >&2 && false
         }; }
 
         install_success=$?
@@ -2505,12 +2505,12 @@ else
         if [[ -n "$needs_keyboard" ]]; then
             echo "restarting keyboard service..."
             head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su systemctl --user restart maliit-server" || {
-                echo "warning: failed to restart keyboard service (maliit-server)" >/dev/stderr && false
+                echo "warning: failed to restart keyboard service (maliit-server)" >&2 && false
             }
         fi
 
         if (( $install_success > 0 )); then
-            echo "failed to deploy patch" >/dev/stderr
+            echo "failed to deploy patch" >&2
         else
             echo "patch deployed"
         fi
@@ -2640,7 +2640,7 @@ $changelog"  # newline intended
             # This back-and-forth makes sure everything is properly cleaned up.
             description="$(echo "$description" | html2text -b 0 --reference-links --no-wrap-links | perl -p0e 's/\[(.*?)\]\[([0-9]+)\]/\1 (\2)/g')"
         else
-            echo "internal error: invalid description target given ('$1')" >/dev/stderr
+            echo "internal error: invalid description target given ('$1')" >&2
         fi
 
         echo -n "$description" | xclip -selection c
