@@ -24,7 +24,7 @@ sailfish-patch - Manage your SailfishOS patches
 
 Create a new patch skeleton with `-c NAME` and put the original files
 in the directory `original`. Copy everything to the directory `patched` and
-make your changes. Configure the project in `build/CONFIG`. Build with `-b`.
+make your changes. Configure the project in `CONFIG`. Build with `-b`.
 
 You can add all packages a patch is based on in the `SourcePackages` field
 in the configuration file. Running `sailfish-patch -u` will update all source

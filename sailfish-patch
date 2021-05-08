@@ -111,7 +111,7 @@ Manage your SailfishOS patches.
 
 Create a new patch skeleton with '-c NAME' and put the original files
 in the directory 'original'. Copy everything to the directory 'patched' and
-make your changes. Configure the project in 'build/CONFIG'. Build with '-b'.
+make your changes. Configure the project in 'CONFIG'. Build with '-b'.
 
 Note: separate settings pages are currently only supported via Patchmanager.
 
