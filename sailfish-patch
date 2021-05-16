@@ -759,6 +759,7 @@ if [[ "$check_config" == true ]]; then
 
     if [[ "$upstream_latest_major" != "$to_check_latest_major" ]]; then
         echo "note: this patch does not support the latest SailfishOS version (v$to_check_latest_major vs v$upstream_latest_major)" >&2
+        echo "      If this is a mistake, consider updating the CompatibleVersions section ('-Cu')." >&2
     fi
 
     if [[ -n "$upstream_more_recent" ]]; then
@@ -794,6 +795,7 @@ if [[ "$check_config" == true ]]; then
             fi
         else
             echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >&2
+            echo "      or use the -Cu option to update it automatically" >&2
         fi
     fi
 
