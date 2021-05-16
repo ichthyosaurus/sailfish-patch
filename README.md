@@ -38,7 +38,8 @@ icons etc. in your patch, you can place them in the `extra` directory.
     - see https://coderus.openrepos.net/pm2/usage/ for further details
 
 6. run `sailfish-patch -b` to build, use `-p` to test it directly via SSH
-7. publish it to
+7. publish it to [OpenRepos](openrepos.net) and [the web catalog](https://coderus.openrepos.net/pm2/)
+   using the wizards: `sailfish-patch -Po -Pm`
 8. update the patch to new upstream versions by running `sailfish-patch -u`
 
 Tips:
