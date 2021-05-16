@@ -17,29 +17,29 @@ icons etc. in your patch, you can place them in the `extra` directory.
 
 ## Creating a new patch
 
-1. configure the patch by editing 'CONFIG'
-    - add all source packages to the 'SourcePackages' field
+1. configure the patch by editing `CONFIG`
+    - add all source packages to the `SourcePackages` field
     - update basic info about the patch
-    - run 'sailfish-patch -C CONFIG' to check for configuration mistakes
-2. bootstrap sources by running 'sailfish-patch -u'
-    - note: it must be possible for 'sailfish-patch' to connect to your device via
+    - run `sailfish-patch -C` to check for configuration mistakes
+2. bootstrap sources by running `sailfish-patch -u`
+    - note: it must be possible for `sailfish-patch` to connect to your device via
       SSH if you want to use source packages from the official repos. Make sure
       this is configured correctly. This is not needed for OpenRepos sources.
-    - alternatively, put original sources in 'original' and copy them to 'patched'
+    - alternatively, put original sources in `original/` and copy them to `patched/`
 3. commit clean sources
-4. make any changes in 'patched'
+4. make any changes in `patched/`
 
-5. optionally: add extra files like translations, icons, or settings to the 'extra' directory
-    - allowed file extensions: .qml, .js, .png, .svg, .qm
-    - translations files must be named 'translation_LANG.qm'
-    - patch icon must be named 'main.png' ('main-light.png') or 'main.svg' ('main-light.svg')
-    - patch settings page must be named 'main.qml'
+5. optionally: add extra files like translations, icons, or settings to the `extra/` directory
+    - allowed file extensions: `.qml`, `.js`, `.png`, `.svg`, `.qm`
+    - translations files must be named `translation_LANG.qm`
+    - patch icon must be named `main.png` (`main-light.png`) or `main.svg` (`main-light.svg`)
+    - patch settings page must be named `main.qml`
     - no sub-directories are allowed
     - see https://coderus.openrepos.net/pm2/usage/ for further details
 
-6. run 'sailfish-patch -b' to build, use '-p' to test it directly via SSH
+6. run `sailfish-patch -b` to build, use `-p` to test it directly via SSH
 7. publish it to
-7. update the patch to new upstream versions by running 'sailfish-patch -u'
+8. update the patch to new upstream versions by running `sailfish-patch -u`
 
 Tips:
 
@@ -52,7 +52,7 @@ Tips:
   `sailfish-patch -u` in the published directory. This way, you do not have to
   publish potentially copyrighted material without permission.
 
-See [MANPAGE.md] for more information.
+See [the manpage](MANPAGE.md) for more information.
 
 ## Importing an existing patch
 
