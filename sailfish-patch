@@ -1779,6 +1779,7 @@ else
                 local repo_status="$(curl -LI "$repo_url" 2>/dev/null | head -n 1 | cut -d$' ' -f2)"
                 if [[ "$repo_status" != 2[0-9][0-9] ]]; then
                     echo "error: failed to download user \"$user\"'s OpenRepos repository for '$source' (code $repo_status)" >&2
+                    echo "       attempted to load: $repo_url" >&2
                     return 1
                 else
                     html="$(curl "$repo_url")"
