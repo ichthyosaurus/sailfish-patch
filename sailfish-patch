@@ -2426,7 +2426,7 @@ else
                         for s in "${rpm_config_requires_sources[@]}"; do
                             [[ -z "$s" ]] && continue
                             s="${s//\//\\/}" # escape slashes
-                            m_clean_lines+=("$s")
+                            m_clean_lines+=("${s#*:}")  # remove OpenRepos username
                         done
                     else
                         m_clean_lines+=("$l")
