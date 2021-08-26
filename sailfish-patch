@@ -74,7 +74,7 @@ dependencies() { # 1: echo/no-echo
             fi
         else
             if [[ -n "$print" ]]; then
-                echo "    - $i: missing"
+                printf -- "    - \e[0m\e[1m%s: missing\e[0m\n" "$i"
                 ret=1
             else
                 return 1
