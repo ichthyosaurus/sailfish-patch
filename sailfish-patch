@@ -2451,6 +2451,11 @@ else
 
         if (( $? != 0 )); then
             echo "error: failed to build RPM" >&2
+            echo "note: the generated RPM spec file can be inspected here" >&2
+            echo "          $temp_spec_file" >&2
+            echo "      Please report invalidly generated spec files as a bug at" >&2
+            echo "          https://github.com/ichthyosaurus/sailfish-patch" >&2
+            echo "      Include the problematic spec file and all log messages in the report." >&2
         else
             mv --backup=t RPMS/**/*.rpm "$build_dir"
             rm "$temp_spec_file"
