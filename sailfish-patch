@@ -2354,7 +2354,7 @@ else
 
         mkdir -p "$rpm_build_dir" "$tarball_build_dir" "$dist_build_dir"
 
-        __save_template_spec "$cDEFAULT_SPEC_NAME"
+        __save_template_spec "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
         __save_template_json "$rpm_build_dir/$cDEFAULT_JSON_NAME"
 
         if [[ -d extra && -n "$(shopt -s nullglob; shopt -s dotglob; echo extra/* )" ]]; then
@@ -2393,7 +2393,7 @@ else
             [[ -z "$value" ]] && value="" # empty values will be left empty
 
             value="${value//\//\\/}" # escape slashes
-            sed -i "s/@${i^^}@/$value/g" "$cDEFAULT_SPEC_NAME"
+            sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
             sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/$cDEFAULT_JSON_NAME"
         done
 
@@ -2434,22 +2434,26 @@ else
                 done
 
                 for l in "${m_clean_lines[@]}"; do
-                    sed -i "$(echo -en "/@${i^^}@/i\\\\\n$i: $l")" "$cDEFAULT_SPEC_NAME"
+                    sed -i "$(echo -en "/@${i^^}@/i\\\\\n$i: $l")" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
                 done
             fi
 
-            sed -i "s/@${i^^}@//g" "$cDEFAULT_SPEC_NAME"
+            sed -i "s/@${i^^}@//g" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
         done
 
         # build rpm
         echo "building RPM..."
-        cp "$cDEFAULT_SPEC_NAME" "$HOME/$cDEFAULT_SPEC_NAME"
-        rpmbuild -bb --build-in-place "$cDEFAULT_SPEC_NAME" --define "_rpmdir $(pwd)/RPMS"
+
+        temp_spec_file="$(mktemp 'sailfish-patch-rpm_XXXX.spec')"
+        mv "$rpm_build_dir/$cDEFAULT_SPEC_NAME" "$temp_spec_file"  # to make sure it's not included in the RPM
+
+        rpmbuild -bb --build-in-place "$temp_spec_file" --define "_rpmdir $(pwd)/RPMS"
 
         if (( $? != 0 )); then
             echo "error: failed to build RPM" >&2
         else
             mv --backup=t RPMS/**/*.rpm "$build_dir"
+            rm "$temp_spec_file"
             echo "success: RPM built"
         fi
 
