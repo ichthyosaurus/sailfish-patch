@@ -21,7 +21,7 @@
 #
 
 DEPENDENCIES=(
-    patch git scp ssh sed xclip
+    patch git scp ssh sed xclip mktemp
     rpm rpmbuild rpm2cpio cpio tar
     hxselect hxnormalize
     du numfmt html2text
