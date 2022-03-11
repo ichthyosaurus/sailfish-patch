@@ -2470,7 +2470,7 @@ else
         echo "building tarball..."
         cd "$tarball_build_dir"
         tarball="$package-$rpm_version-$release.tar.gz"
-        tar -czvf "$tarball" *
+        tar --numeric-owner --owner=0 --group=0 -czvf "$tarball" *
 
         if (( $? != 0 )); then
             echo "error: failed to build tarball" >&2
