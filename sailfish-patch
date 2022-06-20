@@ -449,6 +449,7 @@ trim() {
 }
 
 select_range() { # 1: from pattern, 2: to pattern
+    # Print lines between $1 and $2, excluding both lines matching $1 and $2.
     [[ -z "$1" ]] && return 1 || local from_pattern="$1"
     [[ -z "$2" ]] && return 1 || local to_pattern="$2"
     awk "/$from_pattern/{flag=1;next}/$to_pattern/{flag=0}flag"
@@ -765,44 +766,61 @@ if [[ "$check_config" == true ]]; then
         select_range "^${to_check_latest//./\.}" "^[^$to_check_latest_major]")"
 
     if [[ "$upstream_latest_major" != "$to_check_latest_major" ]]; then
-        echo "note: this patch does not support the latest SailfishOS version (v$to_check_latest_major vs v$upstream_latest_major)" >&2
-        echo "      If this is a mistake, consider updating the CompatibleVersions section ('-Cu')." >&2
+        if [[ "$force" == true ]]; then
+            upstream_more_recent="$(echo "$check_versions" | sort -V | awk "/^${to_check_latest//./\.}/{flag=1;next}flag")"
+        fi
+
+        echo "note: the patch is not marked to support the latest major SailfishOS version (v$to_check_latest_major vs v$upstream_latest_major)" >&2
+
+        if [[ "$check_update_config" != true && "$force" != true ]]; then
+            echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >&2
+            echo "      or use the options '-f -Cu' to update it automatically" >&2
+        elif [[ "$check_update_config" == true && "$force" != true && -n "$upstream_more_recent" ]]; then
+            echo "note: without the '-f' option, only the latest releases of the current major" >&2
+            echo "      version (v$to_check_latest_major) will be added to the CompatibleVersions section" >&2
+        elif [[ "$check_update_config" == true && "$force" != true && -z "$upstream_more_recent" ]]; then
+            echo "note: use the options '-f -Cu' to update the CompatibleVersions section" >&2
+            echo "      including major SailfishOS version upgrades" >&2
+        fi
+    elif [[ -n "$upstream_more_recent" ]]; then
+        echo "note: there are newer releases for this major SailfishOS version (v$to_check_latest_major) available" >&2
+
+        if [[ "$check_update_config" != true ]]; then
+            echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >&2
+            echo "      or use the '-Cu' option to update it automatically" >&2
+        fi
     fi
 
     if [[ -n "$upstream_more_recent" ]]; then
-        echo "note: there are newer releases for this major SailfishOS version available" >&2
         echo -n "$upstream_more_recent" | sed 's/^/- /g' | tee /dev/stderr | xclip -selection c && echo >&2
+    fi
 
-        if [[ "$check_update_config" == true ]]; then
-            # update CompatibleVersions
-            latest_version_line="$(sed 's/^\s*//g' "$check_config_name" | # remove leading whitespace
-                awk '/^CompatibleVersions:$/{flag=1;next}/^[^-# ]/{flag=0} { if (flag && $0 != "") print NR; }' | # print lines in 'CompatibleVersions:'
-                tail -1)" # get the last line number
-            update_config_name="$(mktemp)"
-            cp "$check_config_name" "$update_config_name"
-            update_to_add="$(echo -n "$upstream_more_recent" | sed 's/^/- /g;s/$/\\n/g' | tr -d $'\n')"
-            sed -i "$latest_version_line s/$/\n$update_to_add/;" "$update_config_name"
-            mv "$update_config_name" "$check_config_name" --backup=t
-            echo "note: the CompatibleVersions section has been updated"
-            echo "note: please check if the patch really is compatible with the new releases"
+    if [[ -n "$upstream_more_recent" && "$check_update_config" == true ]]; then
+        # update CompatibleVersions
+        latest_version_line="$(sed 's/^\s*//g' "$check_config_name" | # remove leading whitespace
+            awk '/^CompatibleVersions:$/{flag=1;next}/^[^-# ]/{flag=0} { if (flag && $0 != "") print NR; }' | # print lines in 'CompatibleVersions:'
+            tail -1)" # get the last line number
+        update_config_name="$(mktemp)"
+        cp "$check_config_name" "$update_config_name"
+        update_to_add="$(echo -n "$upstream_more_recent" | sed 's/^/- /g;s/$/\\n/g' | tr -d $'\n')"
+        sed -i "$latest_version_line s/$/\n$update_to_add/;" "$update_config_name"
+        mv "$update_config_name" "$check_config_name" --backup=t
+        echo "note: the CompatibleVersions section has been updated"
+        echo "note: please check if the patch really is compatible with the new releases"
 
-            # update version and changelog for new releases
-            check_update_version=true  # NOTE it might be useful to make this optional
-            if [[ "$check_update_version" == true ]]; then
-                current_version="$(grep "^Version: " "$check_config_name" | head -1 | cut -d' ' -f2)"
-                next_version="$(echo "$current_version" | cut -d. -f1-2).$(echo "$current_version+1" | cut -d. -f3 | bc)"
-                sed -i "s/^Version: .*$/Version: $next_version/" "$check_config_name"
+        # update version and changelog for new releases
+        check_update_version=true  # NOTE it might be useful to make this optional
+        if [[ "$check_update_version" == true ]]; then
+            current_version="$(grep "^Version: " "$check_config_name" | head -1 | cut -d' ' -f2)"
+            next_version="$(echo "$current_version" | cut -d. -f1-2).$(echo "$current_version+1" | cut -d. -f3 | bc)"
+            sed -i "s/^Version: .*$/Version: $next_version/" "$check_config_name"
 
-                last_compatible="$(echo -n "$upstream_more_recent" | tail -1)"
-                sed -i "s/^Changelog:$/Changelog:\n\
+            last_compatible="$(echo -n "$upstream_more_recent" | tail -1)"
+            sed -i "s/^Changelog:$/Changelog:\n\
 - $next_version:\n\
 - - update compatibility info: the patch is compatible with all versions of SailfishOS up to $last_compatible\n\
 -/"\
-                    "$check_config_name"
-            fi
-        else
-            echo "note: if the patch is compatible, consider updating the CompatibleVersions section" >&2
-            echo "      or use the -Cu option to update it automatically" >&2
+                "$check_config_name"
         fi
     fi
 
