@@ -439,6 +439,7 @@ Maintainer
 DiscussionLink
 DonationsLink
 SourcesLink
+Version
 Release"
 
 trim() {
