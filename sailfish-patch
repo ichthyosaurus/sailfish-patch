@@ -2118,21 +2118,10 @@ else
     fi
 
     if [[ "$update" == true ]]; then
+        require_config "$(__get_config_path)" || exit 1
+
         original="$(__get_original_path)"
         patched="$(__get_patched_path)"
-
-        # We only allow changed or untracked files that are not in the original/ or patched/ directories.
-        if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^.. (original|patched)\//!d; /^\?\? /d' | tr '\0' '.')" ]]; then
-            tmp_msg="uncommitted source changes found, check original/ and patched/"
-            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >&2; exit 1; }
-        fi
-
-        if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^\?\? (original|patched)\//!d' | tr '\0' '.')" ]]; then
-            tmp_msg="untracked source files found, check original/ and patched/"
-            [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >&2; exit 1; }
-        fi
-
-        require_config "$(__get_config_path)" || exit 1
 
         readarray -t sources <<<"$(get_multi_config "$(__get_config_path)" "SourcePackages" "")"
 
@@ -2160,7 +2149,7 @@ else
             #       - all source dirs are missing
             #       - unified_diff.patch is missing
 
-            if [[ "$needs_sources" == true ]] && [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
+            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
                 rm -rf "$original"  # empty
             fi
 
@@ -2204,13 +2193,25 @@ else
 
             case "$type" in
                 dist_bootstrap|initial_bootstrap)
+                    __setup_git_repo || exit 1
+
+                    git add "$(__get_config_path)"
+                    [[ "$type" == dist_bootstrap ]] && git add "unified_diff.patch"
+                    git commit -m "patch configuration imported by sailfish-patch"
+
+                    latest_commit="$(git rev-parse --verify --short HEAD 2>/dev/null)" || exit 1
+
                     if [[ "$needs_sources" == true ]]; then
+                        printf -- "%s\n" "fetching sources... $latest_commit" >&2
                         __update_fetch_latest_sources "$latest_commit" && __update_copy_sources || {
                             echo "unrolling changes..."
                             rm -rf "$original" "$patched"
                             exit 1
                         }
                     fi
+
+                    git add "$(__get_config_path)" "$original" "$patched"
+                    git commit -m "unchanged sources imported by sailfish-patch"
 
                     if [[ "$type" == dist_bootstrap ]]; then
                         if ! __update_apply_diff "$diff_file"; then
@@ -2224,14 +2225,32 @@ else
                             if diff <(sed '/^index/d' "$diff_file") <(sed '/^index/d' "$updated_diff") >/dev/null; then
                                 # everything worked perfectly
                                 rm "$updated_diff"
+                                git rm "unified_diff.patch"
                             else
                                 echo "warning: source patch differs from newly generated patch"
                             fi
                         fi
                     fi
+
+                    git add "$(__get_config_path)" "$original" "$patched"
+                    git commit -m "patch automatically imported by sailfish-patch"
+
                     __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
                 ;;
                 update)
+                    require_inside_repo || exit 1
+
+                    # We only allow changed or untracked files that are not in the original/ or patched/ directories.
+                    if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^.. (original|patched)\//!d; /^\?\? /d' | tr '\0' '.')" ]]; then
+                        tmp_msg="uncommitted source changes found, check original/ and patched/"
+                        [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >&2; exit 1; }
+                    fi
+
+                    if [[ -n "$(git status --porcelain=v1 -z | sed -zEe '/^\?\? (original|patched)\//!d' | tr '\0' '.')" ]]; then
+                        tmp_msg="untracked source files found, check original/ and patched/"
+                        [[ "$force" == true ]] && echo "warning: $tmp_msg" || { echo "error: $tmp_msg" >&2; exit 1; }
+                    fi
+
                     diff_file_temp="$(mktemp -p . "$diff_file.XXXXXX")"
                     mv --backup=t -T "$diff_file_temp" "$diff_file"  # make sure we don't overwrite anything
                     __create_diff "$(__get_config_path)" "$diff_file"
