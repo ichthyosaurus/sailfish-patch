@@ -426,6 +426,7 @@ declare -A check_default_dummies=(
 [SourcesLink]="https://example.org/sources"
 [Version]=""
 [Release]=""
+[License]=""
 [Requires]="another-required-package"
 [Conflicts]="my-conflicting-package = 0.0.1|the-old-name"
 [Obsoletes]="the-other-old-name"
@@ -478,7 +479,8 @@ DiscussionLink
 DonationsLink
 SourcesLink
 Version
-Release"
+Release
+License"
 
 trim() {
     local var="$*"
@@ -756,6 +758,17 @@ if [[ "$check_config" == true ]]; then
                     error=true
                 fi
             ;;
+            License)
+                # must not be empty
+                if [[ -z "$value" ]]; then
+                    printf -- "%s\n" "error: required field '$key' is empty" >&2
+                    error=true
+                fi
+                # needs special rules
+                # TODO
+                # - ensure that this field only contains valid SPDX license indentifiers
+                # - ensure that the license in COPYING is actually the one named in this field
+            ;;
             *) is_single=false;;
         esac
         # END value checks for single line fields
@@ -889,7 +902,7 @@ __save_template_config() { # 1: output file
 # Fields:
 # - one line: Prefix, DisplayName, PackageName, Category,
 #             Maintainer, Summary, DiscussionLink, DonationsLink,
-#             SourcesLink, Version, Release
+#             SourcesLink, Version, Release, License
 # - multiple lines: Keywords, Description, Screenshots,
 #             CompatibleVersions, Changelog, Requires,
 #             Obsoletes, Conflicts
@@ -936,6 +949,7 @@ SourcesLink: $(__get_default_config "SourcesLink")
 
 Version: $(__get_default_config "Version")
 Release: $(__get_default_config "Release")
+License: $(__get_default_config "License")
 
 # Add a list of commands below which can be run after deployment.
 # TestCommands:
@@ -1010,7 +1024,7 @@ Summary: @SUMMARY@
 Version: @VERSION@
 Release: @RELEASE@
 Group: System/Patches
-License: GPLv3
+License: @LICENSE@
 Packager: @MAINTAINER@
 Source0: %{name}-%{version}.tar.xz
 Obsoletes: %{name} <= %{version}
@@ -1459,6 +1473,7 @@ $(echo -n "$check_allowed_in_global_config" | tr '\n' ' ' | sed 's/^/# /g;s/ $//
 
 # Version: 1.0.0
 # Release: 1
+# License: GPL-3.0-or-later
 
 # Prefix: /usr/share
 # Maintainer: Foo Bar
@@ -2526,7 +2541,7 @@ else
         echo "building version: $rpm_version-$release"
 
         # configure spec and json files
-        for i in PackageName Summary Version Release Maintainer DisplayName Category DiscussionLink DonationsLink SourcesLink; do
+        for i in PackageName Summary Version Release License Maintainer DisplayName Category DiscussionLink DonationsLink SourcesLink; do
             value="$(get_single_config "$config" "$i")"
             [[ -z "$value" ]] && value="" # empty values will be left empty
 
