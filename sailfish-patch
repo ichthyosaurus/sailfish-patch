@@ -595,6 +595,9 @@ if [[ "$check_config" == true ]]; then
         key="${line%%:*}"
         value="$(trim "${line#$key:}")"
 
+        orig_line="$line"
+        orig_value="$value"
+
         if [[ -z "$line" ]]; then
             continue
         elif [[ "$line" == "#"* ]]; then
@@ -655,12 +658,16 @@ if [[ "$check_config" == true ]]; then
 
         if [[ -n "$is_multiline" ]]; then
             if (( lines_for_multi == 0 )); then
-                echo "warning: empty multi-line field '$is_multiline' at line $is_multiline_at"
 
                 if [[ "$is_multiline_required" == true ]]; then
-                    echo "error: required field '$key' is empty" >&2
+                    echo "error: required field '$is_multiline' is empty" >&2
                     error=true
+                else
+                    echo "warning: empty multi-line field '$is_multiline' at line $is_multiline_at"
                 fi
+
+                line="$orig_line"
+                value="$orig_value"
             fi
 
             is_multiline=
