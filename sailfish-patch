@@ -900,7 +900,7 @@ $(echo -n "$required_config_values" | tr '\n' ',' | sed 's/^,//g; s/,/, /g;s/,$/
 #
 
 SourcePackages:
-$(__get_default_config "SourcePackages")
+$(__get_default_config "SourcePackages" | sed 's/^/# /g')
 
 Prefix: $(__get_default_config "Prefix")
 DisplayName: $(__get_default_config "DisplayName")
@@ -928,7 +928,7 @@ $(__get_default_config "Keywords")
 Maintainer: $(__get_default_config "Maintainer")
 Summary: $(__get_default_config "Summary")
 Description:
-$(__get_default_config "Description")
+$(__get_default_config "Description" | sed 's/^/# /g')
 
 DiscussionLink: $(__get_default_config "DiscussionLink")
 DonationsLink: $(__get_default_config "DonationsLink")
@@ -948,14 +948,14 @@ Requires:
 - @sources
 $(__get_default_config "Requires" | sed 's/^/# /g')
 
-Conflicts:
-$(__get_default_config "Conflicts")
+# Conflicts:
+$(__get_default_config "Conflicts" | sed 's/^/# /g')
 
-Obsoletes:
-$(__get_default_config "Obsoletes")
+# Obsoletes:
+$(__get_default_config "Obsoletes" | sed 's/^/# /g')
 
-Screenshots:
-$(__get_default_config "Screenshots")
+# Screenshots:
+$(__get_default_config "Screenshots" | sed 's/^/# /g')
 
 CompatibleVersions:
 $(__get_default_config "CompatibleVersions")
@@ -1457,7 +1457,9 @@ $(echo -n "$check_allowed_in_global_config" | tr '\n' ' ' | sed 's/^/# /g;s/ $//
 # Lines starting with '#' will be ignored.
 # Entry lines are key-value pairs joined by ':' (one entry per line).
 
+# Version: 1.0.0
 # Release: 1
+
 # Prefix: /usr/share
 # Maintainer: Foo Bar
 # DiscussionLink: https://discuss.example.org/foobar
