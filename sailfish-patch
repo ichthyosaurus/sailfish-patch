@@ -1994,6 +1994,7 @@ else
     __update_apply_diff() { # 1: diff file
         local original="$(__get_original_path)"
         local patched="$(__get_patched_path)"
+        local relative_patched="$(realpath -m "$patched" --relative-to .)"
         local prefix="$(get_single_config "$(__get_config_path)" "Prefix" "/")"
         local tmp_diff="diff_applying.patch"
         local patch_command_file="diff_apply_command.sh"
@@ -2007,41 +2008,30 @@ else
             return 1
         }
 
-        __update_apply_diff_rollback() {
-            rm -rf "$original" "$patched"
-            mv "$original_backup" "$original"
-            mv "$patched_backup" "$patched"
-        }
-
-        if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
-            prefix="$prefix/"
-        fi
-
-        sed "$1" -Ee "s@(--git|---|\+\+\+) a${prefix}@\1 a${original}/@g;
-                   s@(--git|---|\+\+\+) b${prefix}@\1 b${patched}/@g;
-                   s@(--git a/.*) b${prefix}@\1 b${patched}/@g" > "$tmp_diff" || {
-            echo "error: failed to update diff paths" >&2
-            __update_apply_diff_rollback
+        cp "$1" "$tmp_diff" || {
+            printf -- "%s\n" "fatal: failed to copy patch file from '$1' to '$tmp_diff'" >&2
             return 1
         }
 
-        strip="$(pwd)"
-        strip="${strip%/}/"
-        strip="$(echo "$strip" | grep -oe "/" | wc -l)"
+        shopt -s extglob
+        prefix="$prefix/"            # ensure trailing slash exists
+        prefix="${prefix//+(\/)//}"  # remove duplicate slashes
+        strip="$(grep -oe '/' <<< "$prefix" | wc -l)"  # count slashes
+        shopt -u extglob
 
         local failed=false
         if [[ "$patch_utility" == "git" ]]; then
-            if ! git apply --reject --binary -p "$strip" -v "$tmp_diff"; then
+            if ! git apply --directory="$relative_patched" --reject --binary -p "$strip" -v "$tmp_diff"; then
                 echo "error: failed to apply diff" >&2
                 echo -n "patch command: "
-                echo "git apply --reject --binary -p '$strip' -v '$tmp_diff'" | tee "$patch_command_file"
+                printf -- "%s\n" "git apply --directory='$relative_patched' --reject --binary -p '$strip' -v '$tmp_diff'" | tee "$patch_command_file"
                 failed=true
             fi
         elif [[ "$patch_utility" == "patch" ]]; then
-            if ! patch -p"$strip" -u <"$tmp_diff"; then
+            if ! patch -d "$relative_patched" -p"$strip" -u <"$tmp_diff"; then
                 echo "error: failed to apply diff" >&2
                 echo -n "patch command: "
-                echo "patch -p'$strip' -u <'$tmp_diff'" | tee "$patch_command_file"
+                printf -- "%s\n" "patch -d '$relative_patched' -p'$strip' -u <'$tmp_diff'" | tee "$patch_command_file"
                 failed=true
             fi
         else
@@ -2049,7 +2039,12 @@ else
             failed=true
         fi
 
-        [[ "$failed" == true ]] && __update_apply_diff_rollback && return 1
+        if [[ "$failed" == true ]]; then
+            rm -rf "$original" "$patched"
+            mv "$original_backup" "$original"
+            mv "$patched_backup" "$patched"
+            return 1
+        fi
 
         rm -rf "$original" && mv "$original_backup" "$original"
         rm -rf "$patched_backup"
