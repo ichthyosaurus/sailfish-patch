@@ -287,6 +287,12 @@ while [[ $# > 0 ]]; do
                 # save absolute path
                 import_source="$(readlink -m "$(dirname "$1")")/$(basename "$1")"
             fi
+
+            if [[ -d "$2" ]]; then
+                update_local_sources="$(readlink -m "$(dirname "$2")")/$(basename "$2")"
+                printf -- "%s\n" "loading source packages from '$update_local_sources'" >&2
+                shift
+            fi
         ;;
         -p|--publish-ssh)
             if [[ "$publish_via_ssh_possible" == false ]]; then
