@@ -254,7 +254,12 @@ while [[ $# > 0 ]]; do
         -b|--build) build=true;;
         -u|--update)
             update=true
-            [[ -d "$2" ]] && update_local_sources="$2" && shift
+
+            if [[ -d "$2" ]]; then
+                update_local_sources="$(readlink -m "$(dirname "$2")")/$(basename "$2")"
+                printf -- "%s\n" "loading source packages locally from '$update_local_sources'" >&2
+                shift
+            fi
         ;;
         -i|--import)
             import=true
