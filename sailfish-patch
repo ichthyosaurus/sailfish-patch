@@ -448,9 +448,10 @@ declare -A default_config_values=(
 [DiscussionLink]="s@dummy"
 [DonationsLink]="s@dummy"
 [SourcesLink]="s@dummy"
-[Version]="s@X.Y.Z"
-[Release]="s@N"
-[Requires]="m@sailfish-version >= 3.0.0|@sources|${check_default_dummies[Requires]}"
+[Version]="s@0.1.0"
+[Release]="s@1"
+[License]="s@GPL-3.0-or-later"
+[Requires]="m@dummy"
 [Conflicts]="m@dummy"
 [Obsoletes]="m@dummy"
 [Screenshots]="m@screenshot-1.png|/home/user/screen-2.png|path/relative/to/config/file/location/screen-3.png"
@@ -936,7 +937,9 @@ Release: $(__get_default_config "Release")
 
 # Use @sources to mark all entries of SourcePackages as required.
 Requires:
-$(__get_default_config "Requires")
+- sailfish-version >= 3.0.0
+- @sources
+$(__get_default_config "Requires" | sed 's/^/# /g')
 
 Conflicts:
 $(__get_default_config "Conflicts")
