@@ -57,13 +57,22 @@ See [the manpage](MANPAGE.md) for more information.
 
 ## Importing an existing patch
 
-- create a new configuration file with `-eC > CONFIG`
-- specify source packages, patch name, etc. (see step 1 above)
-- use `-i CONFIG unified_diff.patch` to create a new repo and bootstrap it
+Importing a patch for which there is a `CONFIG` file is very straightforward:
+
+- Create an empty directory for the patch, e.g. `my-patch`
+- Drop `CONFIG` as well as either `unified_diff.patch` or a tarball containing
+  the patch file into this directory.
+- Run `sailfish-patch -u`.
+
+If no `CONFIG` file is available, follow these steps:
+
+- Create a new configuration file with `sailfish-patch -eC > CONFIG`.
+- Specify source packages, patch name, etc. (see step 1 in "Creating a new patch").
+- Run `sailfish-patch -i CONFIG my_patch_file.diff` to create a new repo and bootstrap it.
 
 # Installation
 
-`sailfish-patch` is written purely in `bash` but has the following dependencies:
+`sailfish-patch` is written purely in `bash` but requires the following shell commands:
 
     patch git scp ssh sed xclip
     rpm rpmbuild rpm2cpio cpio tar
@@ -74,11 +83,14 @@ See [the manpage](MANPAGE.md) for more information.
 
 ## Installation in a virtual machine
 
-On non-Debian based distros, it might be easier to use a virtual machine to run the sailfish-patch utility.
-Install [vagrant](https://www.vagrantup.com/) and choose a provider, for example Virtualbox (and maybe the vbguest plugin with `vagrant plugin install vagrant-vbguest`).
+On non-Debian based distros, it might be easier to use a virtual machine to run
+the sailfish-patch utility. Install [vagrant](https://www.vagrantup.com/) and
+choose a provider, for example Virtualbox (and maybe the vbguest plugin with
+`vagrant plugin install vagrant-vbguest`).
 
-You can now setup a virtual machine by running `vagrant up` in the `vagrant` folder.
-SSH into the virtual machine with `vagrant ssh`, you find the synced folder under `/vagrant` which is one level above the folder of `sailfish-patch`.
+You can now setup a virtual machine by running `vagrant up` in the `vagrant`
+folder. SSH into the virtual machine with `vagrant ssh`, you find the synced
+folder under `/vagrant` which is one level above the folder of `sailfish-patch`.
 (The synced folder can be changed in `vagrant/Vagrantfile`)
 
 # License

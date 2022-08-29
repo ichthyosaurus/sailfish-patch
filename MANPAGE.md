@@ -2,33 +2,40 @@
 # SAILFISH-PATCH 1 "" "sailfish-patch 2.4.0 (2021-05-08)"
 
 ## NAME
-sailfish-patch - Manage your SailfishOS patches
+sailfish-patch - Helper tool for developing SailfishOS patches
+
 
 ## SYNOPSIS
 
-`sailfish-patch` [-b] [-p] [-Po [latest]] [-Pm [latest]] [-S|-S ROUNDS]
-
 `sailfish-patch` [-c NAME]
 
-`sailfish-patch` [-u [DIR]]
+`sailfish-patch` [-u [RPMS]]
 
-`sailfish-patch` [-i CONFIG SOURCE]
+`sailfish-patch` [-b] [-p] [-Po [latest]] [-Pm [latest]]
+
+`sailfish-patch` [-i CONFIG SOURCE [RPMS]]
 
 `sailfish-patch` [-C|-Cu FILE]
 
+`sailfish-patch` [-S|-S ROUNDS]
+
 `sailfish-patch` [-h] [-V]
+
 
 ## DESCRIPTION
 
 **Creating a new patch:**
 
-Create a new patch skeleton with `-c NAME` and put the original files
-in the directory `original`. Copy everything to the directory `patched` and
-make your changes. Configure the project in `CONFIG`. Build with `-b`.
+Create a new patch skeleton with `-c NAME`. Add a list of source packages in
+`CONFIG`, and bootstrap the development with `-u`. Make your changes in `patched`.
+Build with `-b`.
 
-You can add all packages a patch is based on in the `SourcePackages` field
-in the configuration file. Running `sailfish-patch -u` will update all source
-files and makes it easy to adapt the patch to new upstream versions.
+Note: instead of defining sources in the `SourcePackages` field of the config
+file, you can also manually add sources in the `original` directory. Then copy
+everything to the directory `patched` and make your changes.
+
+Running `sailfish-patch -u` later on will update all source files and makes it
+easy to adapt the patch to new upstream versions.
 
 Note that it must be possible for `sailfish-patch` to connect to your device via
 SSH if you want to use source packages from the official repos. Make sure this
@@ -39,11 +46,15 @@ icons etc. in your patch, you can place them in the `extra` directory.
 
 **Importing an existing patch:**
 
-An existing patch can be imported by running `sailfish-patch` with the `--import`
-option. Create a new configuration file using `sailfish-patch -eC > CONFIG`,
-then specify source packages, patch name, etc. Finally run
-`sailfish-patch CONFIG PATCH` to create a new bootstrapped repository. (See above
-for further details.)
+Importing a patch for which there is a `CONFIG` file is very straightforward: simply
+create an empty directory for the patch, drop the `CONFIG` file and the `unified_diff.patch`
+file in it, and run `sailfish-patch -u`.
+
+A patch that has no `CONFIG` file can be imported by running `sailfish-patch`
+with the `--import` option. Create a new configuration file using
+`sailfish-patch -eC > CONFIG`, then specify source packages, patch name, etc.
+Finally run `sailfish-patch CONFIG my_patch_file.diff` to create a new bootstrapped
+repository. (See above for further details.)
 
 **Tips:**
 
@@ -56,28 +67,17 @@ for further details.)
   `sailfish-patch -u` in the published directory. This way, you do not have to
   publish potentially copyrighted material without permission.
 
+
 ## OPTIONS
 
 `-c, --create NAME`
   Create new patch skeleton in NAME
 
-`-C, --check-config FILE`
-  Validate config file FILE
-
-`-Cu, --config-update FILE`
-  Same as `-C`, but update sections automatically (e.g. add new releases to the `CompatibleVersions` section)
-
-`-i, --import CONFIG SOURCE`
-  Setup a new working directory for the given patch `SOURCE` can either be a tarball containing the patch file (`unified_diff.patch`) in its root, or it can be a patch. Use `-eC` to create a new config file.
-
 `-b, --build`
   Build RPM and tarball
 
-`-u, --update [DIR]`
-  Update the working directory with the latest sources. This needs a working ssh connection for official source, i.e. packages not from OpenRepos. Optional DIR to use already downloaded package files from the given directory.
-
-`-f, --force`
-  Skip some safety checks
+`-u, --update [RPMS]`
+  Update the working directory with the latest sources, or import the patch if only a config file and a patch file called `unified_diff.patch` are found. Update the working directory with the latest sources. This needs a working ssh connection for downloading from official sources, i.e. packages not from OpenRepos. Optionally set `RPMS` to use already downloaded package files from the given directory.
 
 `-p, --publish-ssh`
   Publish and install patch on your device via SSH
@@ -88,8 +88,20 @@ for further details.)
 `-Pm, --publish-patchmanager [latest]`
   Wizard for publishing in PM's online catalogue. (See `-Po` for more details.)
 
+`-C, --check-config FILE`
+  Validate config file FILE
+
+`-Cu, --config-update FILE`
+  Same as `-C`, but update sections automatically (e.g. add new releases to the `CompatibleVersions` section)
+
 `-S, --optimize-screenshots [ROUNDS]`
   Optimize PNG screenshot files of the current project. Optionally specify number of processing rounds for best result (default: 1).
+
+`-i, --import CONFIG SOURCE [RPMS]`
+  Setup a new working directory for the given patch. This command is especially useful for importing patches that were not created with this tool. In other cases, `-u` might be more suited for the task. `SOURCE` can either be a tarball containing the patch file (`unified_diff.patch`) in its root, or it can be a patch. Optionally set `RPMS` to use already downloaded package files from the given directory. *Note:* use `-eC` to create a new config file.
+
+`-f, --force`
+  Skip some safety checks
 
 ### Templates
 `-eC, --export-config`
@@ -110,7 +122,7 @@ for further details.)
 `-eS, --export-spec`
   Export RPM spec-file template
 
-### Debug Options
+### Options for development and for debugging
 `-R, --check-releases`
   Load a list of SailfishOS releases from the Internet and compare it to the list of versions currently supported
 
@@ -141,6 +153,7 @@ The value of `SF_PATCH_GLOBAL_DEFAULTS` defaults to:
 
     $HOME/.config/sailfish-patch.conf
 
+
 ## ENVIRONMENT
 
 `SF_PATCH_PASSFILE`
@@ -159,6 +172,7 @@ The value of `SF_PATCH_GLOBAL_DEFAULTS` defaults to:
   Path to the global configuration file for some default values used in new
   patch config files
 
+
 ## ADDING NEW CONFIGURATION FIELDS
 
 To add a new configuration field, you have to update the following places:
@@ -167,12 +181,13 @@ To add a new configuration field, you have to update the following places:
 - `default_config_values` array with default configuration values
   - prefix `s@` for single-line fields and `m@` for multi-line fields
   - use `[sm]@dummy` to use the dummy value as default value
-- add the field to the list of required fields
+- add the field to the list of required fields in `required_config_values`
 - and to the single line or multi line check switches
 - add the field to all wizards where it is needed
 - if necessary: add the field to `check_allowed_in_global_config`
 - add the field to the config file template in `__save_template_config`
 - update the Kate syntax file
+
 
 ## UPDATING LIST OF SUPPORTED VERSIONS
 
@@ -190,6 +205,7 @@ supported by cross-checking the results with Patchmanager's list at:
 Finally, update the variable `$check_versions` and create a pull request at:
 
     https://github.com/ichthyosaurus/sailfish-patch
+
 
 ## EXIT STATUS
 
@@ -220,6 +236,7 @@ Install it via
 
 or grab the source from <https://github.com/sunaku/md2man>.
 
+
 ## DEPENDENCIES
 `sailfish-patch` is written purely in `bash` but has the following dependencies:
 
@@ -243,8 +260,10 @@ or grab the source from <https://github.com/sunaku/md2man>.
 - pngquant
 - convert (from package imagemagick)
 
+
 ## AUTHOR
 Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman.
+
 
 ## COPYRIGHT
 Copyright (C) 2016  Cornerman, 2018-2021  Mirian Margiani

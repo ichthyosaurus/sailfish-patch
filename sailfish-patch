@@ -123,40 +123,60 @@ make your changes. Configure the project in '$cDEFAULT_CONFIG_NAME'. Build with 
 Note: separate settings pages are currently only supported via Patchmanager.
 
 Usage:
-    $script [-b] [-p] [-Po [latest]] [-Pm [latest]] [-S|-S ROUNDS]
     $script -c NAME
-    $script -u [DIR]
-    $script -i CONFIG SOURCE
+    $script -u [RPMS]
+    $script [-b] [-p] [-Po [latest]] [-Pm [latest]]
+
+    $script -i CONFIG SOURCE [RPMS]
     $script [-C|-Cu] FILE
+    $script [-S|-S ROUNDS]
+
     $script [-h] [-V]
 
 Arguments:
     -c, --create NAME           - create new patch skeleton in NAME
-    -C, --check-config FILE     - validate config file FILE
-    -Cu, --config-update FILE   - same as -C, but update sections automatically
-                                  (e.g. add new releases to the CompatibleVersions section)
-    -i, --import CONFIG SOURCE  - setup a new working directory for the given patch
-                                  SOURCE can either be a tarball containing the patch file
-                                  (unified_diff.patch) in its root, or it can be a patch.
-                                  Use -eC to create a new config file.
     -b, --build                 - build RPM and tarball
-    -u, --update [DIR]          - update the working directory with the latest sources
-                                  This needs a working ssh connection for official source, i.e.
-                                  packages not from OpenRepos. Optional DIR to use already
-                                  downloaded package files from the given directory.
-    -f, --force                 - skip some safety checks
+    -u, --update [RPMS]         - update the working directory with the latest sources, or
+                                  import the patch if only a config file and a patch file
+                                  called 'unified_diff.patch' are found.
+                                  This needs a working ssh connection for downloading from official
+                                  sources, i.e. packages not from OpenRepos. Optionally set
+                                  'RPMS' to use already downloaded package files from the
+                                  given directory.
     -p, --publish-ssh           - publish and install patch on your device via ssh
     -Po, --publish-openrepos    - wizard for publishing in OpenRepos
                                   When given 'latest' as argument to -Po, the wizard
                                   will provide info for updating the entry.
     -Pm, --publish-patchmanager - wizard for publishing in PM's online catalogue
                                   See -Po for more details.
+
+    -C, --check-config FILE     - validate config file FILE
+    -Cu, --config-update FILE   - same as -C, but update sections automatically
+                                  (e.g. add new releases to the CompatibleVersions section)
     -S, --optimize-screenshots [ROUNDS] - optimize PNG screenshot files of the current project
                                   optional: specify number of processing
                                   rounds for best result (default: 1)
+    -i, --import CONFIG SOURCE [RPMS] - setup a new working directory for the given patch
+                                  This command is especially useful for importing patches that
+                                  were not created with this tool. In other cases, -u might be
+                                  more suited for the task.
+                                  SOURCE can either be a tarball containing the patch file
+                                  (unified_diff.patch) in its root, or it can be a patch.
+                                  Optionally set 'RPMS' to use already downloaded package
+                                  files from the given directory.
+                                  Note: use -eC to create a new config file.
+    -f, --force                 - skip some safety checks
 
     -V, --version               - show version and license information
     -h, --help                  - show this help and exit
+
+Templates:
+    -eC, --export-config        - export $cDEFAULT_CONFIG_NAME template
+    -eL, --export-license       - export $cDEFAULT_LICENSE_NAME template
+    -eG, --export-gitignore     - export $cDEFAULT_GITIGNORE_NAME template
+    -eI, --export-icon          - export OpenRepos icon template
+    -eJ, --export-json          - export $cDEFAULT_JSON_NAME template
+    -eS, --export-spec          - export rpm specfile template
 
 Debug/Development Options:
     -R, --check-releases        - load a list of SailfishOS releases from the Internet
@@ -164,12 +184,6 @@ Debug/Development Options:
                                   by this script
     -g, --use-git-apply         - use git-apply(1) instead of patch(1) for applying
                                   the patch (see -i and -u)
-    -eC, --export-config        - export $cDEFAULT_CONFIG_NAME template
-    -eL, --export-license       - export $cDEFAULT_LICENSE_NAME template
-    -eG, --export-gitignore     - export $cDEFAULT_GITIGNORE_NAME template
-    -eI, --export-icon          - export OpenRepos icon template
-    -eJ, --export-json          - export $cDEFAULT_JSON_NAME template
-    -eS, --export-spec          - export rpm specfile template
 
 Environment:
     - path to a local file containing your devel-su passphrase
