@@ -459,6 +459,18 @@ declare -A default_config_values=(
 [TestCommands]="m@dummy"
 )
 
+required_config_values="
+DisplayName
+PackageName
+Category
+Maintainer
+Summary
+Version
+Release
+License
+Description
+CompatibleVersions"
+
 check_allowed_in_global_config="Prefix
 Maintainer
 DiscussionLink
@@ -773,7 +785,9 @@ if [[ "$check_config" == true ]]; then
     done < "$check_config_name"
 
     # check for required fields
-    for r in DisplayName PackageName Category Maintainer Summary Version Release Description CompatibleVersions; do
+    readarray -t required_config_keys_array <<< "$required_config_values"
+    for r in "${required_config_keys_array[@]}"; do
+        [[ -z "$r" ]] && continue
         if ! printf "%s\n" "${keys_found[@]}"  | grep -Pqoe "^$r"; then
             echo "error: required field '$r' is missing" >&2
             error=true
@@ -872,6 +886,9 @@ __save_template_config() { # 1: output file
 #             CompatibleVersions, Changelog, Requires,
 #             Obsoletes, Conflicts
 #   (each line in a multiline field must start with '- ')
+#
+# Required:
+$(echo -n "$required_config_values" | tr '\n' ',' | sed 's/^,//g; s/,/, /g;s/,$//;' | fold -w 70 -s | sed 's/^/# /g;')
 #
 
 SourcePackages:
