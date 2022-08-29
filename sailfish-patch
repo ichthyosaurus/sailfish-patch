@@ -2058,63 +2058,57 @@ else
     }
 
     if [[ "$import" == true ]]; then
-        if git rev-parse --git-dir 2>/dev/null; then
-            echo "error: already inside a Git repository;" >&2
-            echo "       sailfish-patch heavily relies on having only one" >&2
-            echo "       patch per repo" >&2
-            exit 1
-        fi
+        require_outside_repo || exit 1
 
         require_config "$import_config" || exit 1
-
         package="$(get_single_config "$import_config" "PackageName")"
-        "$import_command" --create "$package" || exit 1
 
+        if [[ -e "$package" ]]; then
+            printf -- "%s\n" "error: a file or directory with the name '$package' already exists" >&2
+            exit 1
+        else
+            mkdir "$package" || {
+                printf -- "%s\n" "error: failed to prepare patch directory '$package'" >&2
+                exit 1
+            }
+        fi
+
+        pre_base="$(pwd)"
         cd "$package"
         cp "$import_config" "$(__get_config_path)"
-
-        __update_fetch_latest_sources || exit 1
-        __update_copy_sources || exit 1
 
         # extract tarball
         base="$(pwd)"
         extract_dir=""
 
         if [[ "$(file --mime-type -b "$import_source")" == "text/x-diff" ]]; then
-            echo -n # skip, it is a patch file so we can use it directly
-        elif tar -tf "$import_source" >/dev/null 2>/dev/null; then
-            # it is a tar file, so we extract it and search for the patch
-            extract_dir="$(mktemp -d tmp.XXXX -p .)"
-            cd "$extract_dir"
-            tar -xzvf "$import_source"
-
-            if [[ ! -f "unified_diff.patch" ]]; then
-                echo "error: could not find diff file in tarball" >&2
+            # it is a patch file so we can use it directly
+            cp "$import_source" "$base/unified_diff.patch"
+        elif tar -tf "$import_source" "unified_diff.patch" >/dev/null 2>&1; then
+            # it is a tar file, so we extract the patch from it
+            tar -xzvf "$import_source" "unified_diff.patch" >/dev/null || {
+                printf -- "%s\n" "error: failed to extract patch from tarball" >&2
+                printf -- "%s\n" "       You can safely remove '$package' for cleanup." >&2
+                cd "$pre_base"
                 exit 1
-            fi
-
-            cd "$base"
-            import_source="$extract_dir/unified_diff.patch"
+            }
+            import_source="$base/unified_diff.patch"
         else
             echo "error: unrecognized source file" >&2
-            echo "       Any patch file, or a patch named 'unified_diff.patch' inside" >&2
-            echo "       a tar archive are supported." >&2
+            echo "       Any patch file, or a patch named 'unified_diff.patch' in the" >&2
+            echo "       root of a tar archive are supported." >&2
+            printf -- "%s\n" "       You can safely remove '$package' for cleanup." >&2
+            cd "$pre_base"
             exit 1
         fi
 
-        __update_apply_diff "$import_source" || {
-            [[ -n "$extract_dir" ]] && rm -rf "$extract_dir"
+        cd "$base"
+        "$import_command" --update "$update_local_sources" || {
+            printf -- "%s\n" "error: failed to import the patch, see above for details" >&2
+            printf -- "%s\n" "       You can safely remove '$package' for cleanup." >&2
+            cd "$pre_base"
             exit 1
         }
-
-        if [[ -n "$extract_dir" ]]; then
-            rm -rf "$extract_dir"
-        fi
-
-        git add "$(__get_config_path)" "$(__get_original_path)" "$(__get_patched_path)" &&\
-            git commit -m "patch automatically imported by sailfish-patch"
-
-        __print_initial_help "$(__get_original_path)" "$(__get_patched_path)" "$(__get_extra_path)"
     fi
 
     if [[ "$update" == true ]]; then
