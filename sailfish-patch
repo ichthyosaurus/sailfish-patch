@@ -1600,6 +1600,60 @@ __create_diff() { # 1: config, 2: save path
                         s@(---|\+\+\+) (.*?)\t@\1 \2@g;" > "$2"
 }
 
+# make sure that we are currently in a valid git repository
+# returns 0 if in a repo, and 1 otherwise
+require_inside_repo() { # 1: quiet?
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        return 0
+    else
+        [[ -z "$1" ]] && printf -- "%s\n" "error: '$(basename "$(pwd)")' is not in a Git repository;" >&2
+        return 1
+    fi
+}
+
+# make sure that we are currently *not* in a valid git repository
+# returns 0 if *outside* of a repo, and 1 otherwise
+require_outside_repo() {
+    if require_inside_repo 2>/dev/null; then
+        if [[ -z "$1" ]]; then
+            printf -- "%s\n" "error: '$(basename "$(pwd)")' is inside a Git repository;" >&2
+            printf -- "%s\n" "       sailfish-patch heavily relies on having only one" >&2
+            printf -- "%s\n" "       patch per repo" >&2
+        fi
+
+        return 1
+    fi
+
+    return 0
+}
+
+# initialize a new git repository in the current working directory
+# returns 255 and prints an error message if there is one already
+__setup_git_repo() {
+    require_outside_repo || exit 255
+
+    git init || {
+        printf -- "%s\n" "error: failed to initialize a new Git repository" >&2
+        return 1
+    }
+
+    local defaultbranch
+    defaultbranch="$(git config --global init.defaultbranch)"
+    [[ -z "$defaultbranch" ]] && defaultbranch=main
+
+    git checkout -b "$defaultbranch" || {
+        printf -- "%s\n" "error: failed to switch to the default branch '$defaultbranch'" >&2
+        return 1
+    }
+
+    require_inside_repo || {
+        printf -- "%s\n" "error: failed to setup a new Git repository" >&2
+        return 1
+    }
+
+    return 0
+}
+
 __print_initial_help() { # 1: original path, 2: patched path, 3: extra path
     local title="Short How-To"
     local original="$(basename "$1")"
@@ -1656,11 +1710,7 @@ if [[ "$create_new" == true ]]; then
     mkdir -p "$create_new_name"
     cd "$create_new_name"
 
-    git init
-
-    defaultbranch="$(git config --global init.defaultbranch)"
-    [[ -z "$defaultbranch" ]] && defaultbranch=main
-    git checkout -b "$defaultbranch"
+    __setup_git_repo || exit 1
 
     mkdir -p "$(__get_extra_path)"
     mkdir -p "$(__get_original_path)"
