@@ -2228,11 +2228,19 @@ else
                 exit 1
             elif [[ -f "$working_diff" ]]; then
                 type=retry
-                echo "note: automatic updating failed" >&2
-                echo "      Make sure both source directories contain updated but unchanged sources." >&2
-                echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >&2
-                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >&2
-                echo "      If it fails again, you can checkout the updated sources and try again." >&2
+                echo >&2
+                echo "note: automatic updating failed before, manual steps are required" >&2
+                echo >&2
+                echo "      Make sure both source directories contain the same updated but unchanged sources." >&2
+                echo "      Continue by comitting these updated files into Git, do not reset them" >&2
+                echo "      if you want to continue." >&2
+                echo >&2
+                echo "      Then try to fix the patch in '$working_diff' and re-run the patch command:" >&2
+                echo "      $ bash $(realpath -m "$patch_command_file" --relative-to .)" >&2
+                echo >&2
+                echo "      If it fails again, checkout the updated sources and try again." >&2
+                echo "      If it works, commit the patched files, and delete the workbench files" >&2
+                echo "      '$working_diff' and '$patch_command_file'." >&2
                 exit 0
             fi
 
@@ -2327,12 +2335,19 @@ else
                         }
                     fi
 
-                    __update_apply_diff "$diff_file" && rm -f "$working_diff" || {
-                        echo "note: the original patch has been saved to '$diff_file'" >&2
-                        echo "      Both source directories now contain updated but unchanged sources." >&2
-                        echo "      Continue by comitting the changed files. Do not reset them if you want to continue." >&2
-                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command." >&2
+                    { __update_apply_diff "$diff_file" && rm -f "$working_diff"; } || {
+                        echo >&2
+                        echo "note: the patch must be adapted manually" >&2
+                        echo >&2
+                        echo "      Both source directories now contain the same updated but unchanged sources." >&2
+                        echo "      Continue by comitting these updated files into Git, do not reset them" >&2
+                        echo "      if you want to continue." >&2
+                        echo >&2
+                        echo "      Then try to fix the patch in '$working_diff' and re-run the patch command:" >&2
+                        echo "      $ bash $(realpath -m "$patch_command_file" --relative-to .)" >&2
+                        echo >&2
                         echo "      If it fails again, you can checkout the updated sources and try again." >&2
+                        echo "      The original patch has been saved to '$diff_file'." >&2
                         exit 1
                     }
 
