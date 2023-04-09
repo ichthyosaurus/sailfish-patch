@@ -2113,6 +2113,59 @@ else
             rm -rf "$original" "$patched"
             mv "$original_backup" "$original"
             mv "$patched_backup" "$patched"
+
+            cat <<EOF > "$patch_command_file"
+#!/bin/bash
+
+patch_file="$(pwd)/$tmp_diff"
+patched="$relative_patched"
+strip="$strip"
+
+if [[ ! -f "\$patch_file" ]]; then
+    printf -- "%s\\n" "error: patch file not found at '\$patch_file'" >&2
+    exit 1
+fi
+
+if [[ ! -d "\$patched" ]]; then
+    printf -- "%s\\n" "error: output directory for patched files not found at '\$patched'" >&2
+    exit 1
+fi
+
+while true; do
+    read -n 1 -s -p "Try to apply the patch using 'wiggle' or 'patch'? [w/p/q]> "
+
+    case "\$REPLY" in
+        w|w) printf -- "%s\\n\\n" "applying patch using wiggle...\\n" >&2
+             printf -- "%s\\n" "usage:" >&2
+             printf -- "%s\\n" "- select files using arrow keys and enter" >&2
+             printf -- "%s\\n" "- press q to quit" >&2
+             printf -- "%s\\n\\n" "- press v to save the current view and open it in \$EDITOR\\n" >&2
+             read -n 1 -s -p "press any key to continue..." CONTINUE
+
+             pushd "\$patched"
+             wiggle --strip="\$strip" --browse < "\$patch_file"
+             ok="\$?"
+             popd; echo
+             break
+        ;;
+        p|P) printf -- "%s\\n" "applying patch using patch..." >&2
+             patch -d "\$patched" -p"\$strip" -u < "\$patch_file"
+             ok="\$?"
+             break
+        ;;
+        g|G) printf -- "%s\\n" "applying patch using 'git'..." >&2
+             git apply --directory="\$patched" --reject --binary -p "\$strip" -v "\$patch_file"
+             ok="$?"
+             break
+        ;;
+        q|Q) exit 0;;
+        *) printf -- "%s\\n" "unrecognized option '\$REPLY'" >&2;;
+    esac
+done
+
+exit "\$ok"
+EOF
+
             return 1
         fi
 
