@@ -97,7 +97,7 @@ folder under `/vagrant` which is one level above the folder of `sailfish-patch`.
 
 `sailfish-patch 2.6.0 (2023-04-09)`
 
-Copyright (C) 2018-2021  Mirian Margiani
+Copyright (C) 2018-2023  Mirian Margiani
 
 (`sailfish-patch` was originally based on
 [`gen-sailfish-patch`](https://github.com/cornerman/gen-sailfish-patch)
