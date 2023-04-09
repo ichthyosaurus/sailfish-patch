@@ -1,24 +1,17 @@
 #!/bin/bash
 # kate: syntax bash
-#
+#-
 # sailfish-patch 2.5.0 (2021-11-28)
-# Copyright (C) 2016  Cornerman (https://github.com/cornerman/gen-sailfish-patch)
-#               2018-2023  Mirian Margiani
+# SPDX-FileCopyrightText: 2018-2023 Mirian Margiani
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+# Full license text: https://gnu.org/licenses/gpl.html
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#
+# Originally based on gen-sailfish-patch by Cornerman (2016):
+# https://github.com/cornerman/gen-sailfish-patch
+#·
 
 DEPENDENCIES=(
     patch git scp ssh sed xclip mktemp
@@ -85,13 +78,9 @@ dependencies() { # 1: echo/no-echo
     return "$ret"
 }
 
-version() {
-    echo "\
-sailfish-patch 2.5.0 (2021-11-28)
-Copyright (C) 2018-2021  Mirian Margiani, 2016  Cornerman
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law."
+function version() {
+    sed -n '/^#-/,/^#·/p;/^#·/q' "$0" | sed '1d;$s/.*//;s/#[ ]*//g;' |\
+        sed 's/SPDX-FileCopyrightText:/Copyright:/g;s/SPDX-License-Identifier:/License:/g;'
     dependencies echo
 }
 
