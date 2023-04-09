@@ -2062,7 +2062,7 @@ else
         local original_backup="$original.tmp"
         local patched_backup="$patched.tmp"
 
-        cp -r "$original" "$original_backup" && cp -r "$patched" "$patched_backup" || {
+        { cp -r "$original" "$original_backup" && cp -r "$patched" "$patched_backup"; } || {
             echo "fatal: failed to create temporary copy of pre-patched files" >&2
             echo "error: manual cleanup required" >&2
             return 1
@@ -2259,7 +2259,7 @@ else
 
                     if [[ "$needs_sources" == true ]]; then
                         printf -- "%s\n" "fetching sources... $latest_commit" >&2
-                        __update_fetch_latest_sources "$latest_commit" && __update_copy_sources || {
+                        { __update_fetch_latest_sources "$latest_commit" && __update_copy_sources; } || {
                             echo "unrolling changes..."
                             rm -rf "$original" "$patched"
                             exit 1
@@ -2688,7 +2688,7 @@ else
         needs_keyboard="$(get_multi_config "$config" "Requires" | paste -s -d'\n' - <(get_multi_config "$config" "SourcePackages") | grep -oe '^jolla-keyboard')"
         if [[ -n "$needs_keyboard" ]]; then
             echo "restarting keyboard service..."
-            head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su systemctl --user restart maliit-server" || {
+            { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su systemctl --user restart maliit-server"; } || {
                 echo "warning: failed to restart keyboard service (maliit-server)" >&2 && false
             }
         fi
