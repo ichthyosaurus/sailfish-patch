@@ -948,6 +948,7 @@ if [[ "$check_config" == true ]]; then
             sed -i "s/^Changelog:$/Changelog:\n\
 - $next_version:\n\
 - - update compatibility info: the patch is compatible with all versions of SailfishOS up to $last_compatible\n\
+- - you may have to install an earlier version of this patch on older system versions\n\
 -/"\
                 "$check_config_name"
         fi
