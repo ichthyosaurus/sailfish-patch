@@ -1645,19 +1645,28 @@ require_current_package() { # 1: type (rpm/tarball)
 # create diff and save it to $2
 # assumes config is valid
 __create_diff() { # 1: config, 2: save path
+    shopt -s extglob
     local prefix="$(get_single_config "$1" "Prefix" "/")"
+    prefix="$prefix/"            # ensure trailing slash exists
+    prefix="${prefix//+(\/)//}"  # remove duplicate slashes
+    shopt -u extglob
 
-    if [[ "$prefix" != "/" && "$prefix" != *"/" ]]; then
-        prefix="$prefix/"
-    fi
+    local save_path="$2"
+    [[ "$save_path" != /* ]] && save_path="$(pwd)/$save_path"  # make absolute
 
-    local original="$(__get_original_path)"
     local patched="$(__get_patched_path)"
+    local original="$(realpath -m "$(__get_original_path)" --relative-to "$patched")"
 
-    git -c core.quotepath=off diff --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" |\
+    pushd "$(__get_patched_path)"
+    patched="$(realpath -m "$patched" --relative-to .)"
+
+    # git diff --patch --relative --text --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" > "$2"
+    git -c core.quotepath=off diff --patch --text --no-index --src-prefix="a${prefix}" --dst-prefix="b${prefix}" -- "$original" "$patched" |\
         sed -Ee "s@(--git|---|\+\+\+) (\"?)(a|b)${prefix}(${original#/}|${patched#/})/@\1 \2\3${prefix}@g;
                     s@(--git a/.*) (\"?)b${prefix}${patched#/}/@\1 \2b${prefix}@g;
-                        s@(---|\+\+\+) (.*?)\t@\1 \2@g;" > "$2"
+                        s@(---|\+\+\+) (.*?)\t@\1 \2@g;" > "$save_path"
+
+    popd
 }
 
 # make sure that we are currently in a valid git repository
