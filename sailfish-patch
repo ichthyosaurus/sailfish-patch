@@ -2705,7 +2705,10 @@ EOF
         echo "building tarball..."
         cd "$tarball_build_dir"
         tarball="$package-$rpm_version-$release.tar.gz"
-        tar --numeric-owner --owner=0 --group=0 -czvf "$tarball" *
+        TZ=UTC0 LC_ALL=C tar --sort=name --numeric-owner --owner=0 --group=0 \
+            --mtime='2000-01-01 00:00:00' \
+            --pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime \
+            -czvf "$tarball" *
 
         if (( $? != 0 )); then
             echo "error: failed to build tarball" >&2
