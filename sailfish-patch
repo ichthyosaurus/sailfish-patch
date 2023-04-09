@@ -2056,8 +2056,9 @@ else
         local patched="$(__get_patched_path)"
         local relative_patched="$(realpath -m "$patched" --relative-to .)"
         local prefix="$(get_single_config "$(__get_config_path)" "Prefix" "/")"
-        local tmp_diff="diff_applying.patch"
-        local patch_command_file="diff_apply_command.sh"
+
+        local tmp_diff="diff_applying.patch"  # NOTE must be the same same as $working_diff in the updater!
+        local patch_command_file="diff_apply_command.sh"  # NOTE must be the same as $patch_command_file in the updater!
 
         local original_backup="$original.tmp"
         local patched_backup="$patched.tmp"
@@ -2209,7 +2210,8 @@ else
             latest_commit="$(git rev-parse --verify --short HEAD 2>/dev/null || echo -n "no-git")"
             diff_file="diff_original_${latest_commit}.patch"
             updated_diff="diff_updated_${latest_commit}.patch"
-            working_diff="diff_applying.patch"  # same as $tmp_diff in __update_apply_diff!; TODO documentation
+            working_diff="diff_applying.patch"  # NOTE must be the same same as $tmp_diff in __update_apply_diff!
+            patch_command_file="diff_apply_command.sh"  # NOTE must be the same as $patch_command_file in __update_apply_diff!
 
             if [[ ! -d "$original" && ! -d "$patched" && ! -f "$working_diff" ]]; then
                 if [[ -f "unified_diff.patch" ]]; then
