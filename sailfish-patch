@@ -1027,7 +1027,7 @@ License: $(__get_default_config "License")
 
 # Use @sources to mark all entries of SourcePackages as required.
 Requires:
-- sailfish-version >= 3.0.0
+- sailfish-version >= 4.0.0
 - @sources
 $(__get_default_config "Requires" | sed 's/^/# /g')
 
