@@ -128,7 +128,7 @@ Arguments:
     -u, --update [RPMS]         - update the working directory with the latest sources, or
                                   import the patch if only a config file and a patch file
                                   called 'unified_diff.patch' are found.
-                                  This needs a working ssh connection for downloading from official
+                                  This needs a working SSH connection for downloading from official
                                   sources, i.e. packages not from OpenRepos. Optionally set
                                   'RPMS' to use already downloaded package files from the
                                   given directory.
@@ -150,7 +150,7 @@ Arguments:
                                   were not created with this tool. In other cases, -u might be
                                   more suited for the task.
                                   SOURCE can either be a tarball containing the patch file
-                                  (unified_diff.patch) in its root, or it can be a patch.
+                                  (unified_diff.patch) in its root, or it can be a patch/diff.
                                   Optionally set 'RPMS' to use already downloaded package
                                   files from the given directory.
                                   Note: use -eC to create a new config file.

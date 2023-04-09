@@ -77,7 +77,7 @@ repository. (See above for further details.)
   Build RPM and tarball
 
 `-u, --update [RPMS]`
-  Update the working directory with the latest sources, or import the patch if only a config file and a patch file called `unified_diff.patch` are found. Update the working directory with the latest sources. This needs a working ssh connection for downloading from official sources, i.e. packages not from OpenRepos. Optionally set `RPMS` to use already downloaded package files from the given directory.
+  Update the working directory with the latest sources, or import the patch if only a config file and a patch file called `unified_diff.patch` are found. Update the working directory with the latest sources. This needs a working SSH connection for downloading from official sources, i.e. packages not from OpenRepos. Optionally set `RPMS` to use already downloaded package files from the given directory.
 
 `-p, --publish-ssh`
   Publish and install patch on your device via SSH
@@ -98,7 +98,7 @@ repository. (See above for further details.)
   Optimize PNG screenshot files of the current project. Optionally specify number of processing rounds for best result (default: 1).
 
 `-i, --import CONFIG SOURCE [RPMS]`
-  Setup a new working directory for the given patch. This command is especially useful for importing patches that were not created with this tool. In other cases, `-u` might be more suited for the task. `SOURCE` can either be a tarball containing the patch file (`unified_diff.patch`) in its root, or it can be a patch. Optionally set `RPMS` to use already downloaded package files from the given directory. *Note:* use `-eC` to create a new config file.
+  Setup a new working directory for the given patch. This command is especially useful for importing patches that were not created with this tool. In other cases, `-u` might be more suited for the task. `SOURCE` can either be a tarball containing the patch file (`unified_diff.patch`) in its root, or it can be a patch/diff. Optionally set `RPMS` to use already downloaded package files from the given directory. *Note:* use `-eC` to create a new config file.
 
 `-f, --force`
   Skip some safety checks
