@@ -1072,15 +1072,16 @@ EOF
 __save_template_json() { # 1: output file
     cat <<EOF > "$1"
 {
-    "name": "@DISPLAYNAME@",
-    "description": "@DESCRIPTION@",
+    "author": "@MAINTAINER@",
+    "name": "@PACKAGENAME@",
+    "display_name": "@DISPLAYNAME@",
+    "version": "@VERSION@",
     "category": "@CATEGORY@",
-    "infos": {
-        "maintainer": "@MAINTAINER@",
-        "discussion": "@DISCUSSIONLINK@",
-        "donations": "@DONATIONSLINK@",
-        "sources": "@SOURCESLINK@"
-    }
+    "description": "@DESCRIPTION@",
+    "discussion": "@DISCUSSIONLINK@",
+    "sources": "@SOURCESLINK@",
+    "donations": "@DONATIONSLINK@",
+    "compatible": [ @COMPATIBLEVERSIONS_LIST@ ]
 }
 EOF
 }
@@ -2627,6 +2628,11 @@ EOF
         description="${description//\"/\\\\\"}" # escape quotes
         description="${description//&/\\\\&}" # escape ampersand
         awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
+            "$rpm_build_dir/$cDEFAULT_JSON_NAME" > _tmp && mv _tmp "$rpm_build_dir/$cDEFAULT_JSON_NAME"
+
+        readarray -t compatible_versions <<<"$(get_multi_config "$config" "CompatibleVersions")"
+        compatible_versions="$(printf -- '"%s", ' "${compatible_versions[@]}" | sed -Ee 's/, $//g' | sed -Ee 's/^""//g')"
+        awk -v r="$compatible_versions" '{gsub(/@COMPATIBLEVERSIONS_LIST@/,r)}1'\
             "$rpm_build_dir/$cDEFAULT_JSON_NAME" > _tmp && mv _tmp "$rpm_build_dir/$cDEFAULT_JSON_NAME"
 
         # configure rpm-specific fields
