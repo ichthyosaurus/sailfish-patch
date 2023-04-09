@@ -1699,7 +1699,7 @@ require_outside_repo() {
 # initialize a new git repository in the current working directory
 # returns 255 and prints an error message if there is one already
 __setup_git_repo() {
-    require_outside_repo || exit 255
+    require_outside_repo || return 255
 
     git init || {
         printf -- "%s\n" "error: failed to initialize a new Git repository" >&2
@@ -2250,7 +2250,7 @@ else
 
             case "$type" in
                 dist_bootstrap|initial_bootstrap)
-                    __setup_git_repo || exit 1
+                    __setup_git_repo || true
 
                     git add "$(__get_config_path)"
                     [[ "$type" == dist_bootstrap ]] && git add "unified_diff.patch"
