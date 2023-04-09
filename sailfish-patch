@@ -870,18 +870,26 @@ if [[ "$check_config" == true ]]; then
 
     # check for required fields
     readarray -t required_config_keys_array <<< "$required_config_values"
+    missing_required_defaults=()
+
     for r in "${required_config_keys_array[@]}"; do
         [[ -z "$r" ]] && continue
         if ! printf "%s\n" "${keys_found[@]}"  | grep -Pqoe "^$r"; then
             echo "error: required field '$r' is missing" >&2
 
-            if default="$(__get_default_config "License")"; then
-                printf -- "%s\n" "       the default value for new config files is: $default" >&2
+            default=''
+            if default="$(__get_default_config "$r")"; then
+                missing_required_defaults+=("$r: $default")
             fi
 
             error=true
         fi
     done
+
+    if (( ${#missing_required_defaults[@]} > 0 )); then
+        printf -- "%s\n" "       the default value for new config files is:" >&2
+        printf -- "%s\n" "${missing_required_defaults[@]}" | tee /dev/stderr | xclip -selection c && echo >&2
+    fi
 
     # check versions
     to_check_list="$(sed '/^\#/d;/^$/d;s/^\s*//g;' "$check_config_name" | # remove comments, blank lines, and leading whitespace
