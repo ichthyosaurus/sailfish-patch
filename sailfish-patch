@@ -2198,13 +2198,9 @@ else
             #       - all source dirs are missing
             #       - unified_diff.patch is missing
 
-            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$original"/* )" ]]; then
-                rm -rf "$original"  # empty
-            fi
-
-            if [[ -z "$(shopt -s nullglob; shopt -s dotglob; echo "$patched"/* )" ]]; then
-                rm -rf "$patched"  # empty
-            fi
+            # delete source dirs if they are empty
+            rmdir --ignore-fail-on-non-empty "$original"
+            rmdir --ignore-fail-on-non-empty "$patched"
 
             type=update
             latest_commit="$(git rev-parse --verify --short HEAD 2>/dev/null || echo -n "no-git")"
