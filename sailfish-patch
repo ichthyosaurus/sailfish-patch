@@ -1,5 +1,5 @@
 #!/bin/bash
-# kate: syntax bash
+# kate: syntax bash; remove-trailing-spaces all;
 #-
 # sailfish-patch 2.5.0 (2021-11-28)
 # SPDX-FileCopyrightText: 2018-2023 Mirian Margiani
