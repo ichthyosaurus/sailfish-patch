@@ -982,7 +982,7 @@ __save_template_config() { # 1: output file
 #             SourcesLink, Version, Release, License
 # - multiple lines: Keywords, Description, Screenshots,
 #             CompatibleVersions, Changelog, Requires,
-#             Obsoletes, Conflicts
+#             Obsoletes, Conflicts, TestCommands
 #   (each line in a multiline field must start with '- ')
 #
 # Required:
