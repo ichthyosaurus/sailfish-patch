@@ -2697,15 +2697,18 @@ EOF
         # build rpm
         echo "building RPM..."
 
-        temp_spec_file="$(mktemp 'sailfish-patch-rpm_XXXX.spec')"
+        temp_spec_file="$(mktemp -p "$(pwd)" 'sailfish-patch-rpm_XXXX.spec')"
         mv "$rpm_build_dir/$cDEFAULT_SPEC_NAME" "$temp_spec_file"  # to make sure it's not included in the RPM
 
         rpmbuild -bb --build-in-place "$temp_spec_file" --define "_rpmdir $(pwd)/RPMS"
 
         if (( $? != 0 )); then
+            backup_spec="$base/$(basename "$base").spec"
+            cp --backup=t "$temp_spec_file" "$backup_spec"
+
             echo "error: failed to build RPM" >&2
             echo "note: the generated RPM spec file can be inspected here" >&2
-            echo "          $temp_spec_file" >&2
+            echo "          $backup_spec" >&2
             echo "      Please report invalidly generated spec files as a bug at" >&2
             echo "          https://github.com/ichthyosaurus/sailfish-patch" >&2
             echo "      Include the problematic spec file and all log messages in the report." >&2
