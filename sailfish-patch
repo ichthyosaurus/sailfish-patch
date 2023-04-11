@@ -1115,6 +1115,9 @@ Requires: patchmanager
 %define _source_payload w9.gzdio
 %define _binary_payload w9.gzdio
 
+%define _buildhost reproducible
+%define clamp_mtime_to_source_date_epoch Y
+
 %description
 @DESCRIPTION@
 
@@ -2687,6 +2690,10 @@ EOF
             sed -i "s/@${i^^}@//g" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
         done
 
+        # prepare reproducible environment
+        SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+        export SOURCE_DATE_EPOCH
+
         # build rpm
         echo "building RPM..."
 
@@ -2713,7 +2720,7 @@ EOF
         cd "$tarball_build_dir"
         tarball="$package-$rpm_version-$release.tar.gz"
         TZ=UTC0 LC_ALL=C tar --sort=name --numeric-owner --owner=0 --group=0 \
-            --mtime='2000-01-01 00:00:00' \
+            --mtime="$(date --utc --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +"%Y-%m-%d 00:00:00")" --clamp-mtime \
             --pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime \
             -czvf "$tarball" *
 
