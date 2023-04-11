@@ -1116,7 +1116,7 @@ Requires: patchmanager
 %define _binary_payload w9.gzdio
 
 %description
-%{summary}
+@DESCRIPTION@
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -2646,6 +2646,13 @@ EOF
         # configure rpm-specific fields
         # NOTE: we don't deduplicate any entries, neither do we check for invalid
         # or contradictory lines. If it's a problem, rpmbuild can find it.
+        description="$(get_multi_config "$config" "Description")"
+        description="${description//%/%%}" # escape percent
+        description="$(trim "$description")"
+        description="${description:-%\{summary\}}"  # fallback to summary as placeholder
+        awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
+            "$rpm_build_dir/$cDEFAULT_SPEC_NAME" > _tmp && mv _tmp "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
+
         for i in Requires Obsoletes Conflicts; do
             values="$(get_multi_config "$config" "$i")"
 
