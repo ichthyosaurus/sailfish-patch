@@ -1910,8 +1910,8 @@ else
             local version_action=
             local file="$packages/${source}.rpm"
 
-            if echo "$s" | grep -Pqoe " ([><]=?|=) "; then
-                version_action="$(echo "$s" | grep -Poe "([><]=?|=)")"
+            if printf -- "%s\n" "$s" | grep -Pqoe " ([><]=?|=) "; then
+                version_action="$(grep -Poe "([><]=?|=)" <<<"$s")"
                 version="${s##* }"
             fi
 
@@ -1939,7 +1939,10 @@ else
 
                 local repo_url="${openrepos_url%/}/${user}/personal/main/${source:0:1}/"
                 local html=
+
+                printf -- "%s\n" "fetching $repo_url ..." >&2
                 local repo_status="$(curl -LI "$repo_url" 2>/dev/null | head -n 1 | cut -d$' ' -f2)"
+
                 if [[ "$repo_status" != 2[0-9][0-9] ]]; then
                     echo "error: failed to download user \"$user\"'s OpenRepos repository for '$source' (code $repo_status)" >&2
                     echo "       attempted to load: $repo_url" >&2
@@ -1949,7 +1952,7 @@ else
                 fi
 
                 set -o pipefail
-                local repo="$(echo "$html" | hxnormalize -x -e | hxselect html body a -s "\n" |\
+                local repo="$(hxnormalize -x -e <<<"$html" | hxselect html body a -s "\n" |\
                     sed -E 's/^<a href=".*?\.rpm">//g;s#</a>##g' |\
                     grep "armv7hl" |\
                     sort --version-sort -u)"
@@ -1961,8 +1964,8 @@ else
 
                 local rpms=()
                 local versions=()
-                readarray -t rpms <<<"$(echo "$repo" | grep "^$source-[0-9]")"
-                readarray -t versions <<<"$(echo "$repo" | grep "^$source-[0-9]" | sed "s/^$source-//g" | sed 's/.armv7hl.rpm$//g')"
+                readarray -t rpms <<<"$(grep -ie "^$source-[0-9]" <<<"$repo")"
+                readarray -t versions <<<"$(grep -ie "^$source-[0-9]" <<<"$repo" | sed "s/^$source-//Ig" | sed 's/.armv7hl.rpm$//g')"
 
                 local last_selected=
                 local rpm_count=0
@@ -1973,8 +1976,25 @@ else
                     ((rpm_count++))
                 done
 
+                if [[ -z "$last_selected" ]]; then
+                    printf -- "%s\n" "error: no package matched '$source' in $repo_url" >&2
+                    cd "$base"
+                    return 1
+                fi
+
+                local last_name="$(grep -ioe "^$source-[0-9]" <<<"$last_selected")"
+                last_name="${last_name%-*}"
+
+                if [[ "$last_name" != "$source" ]]; then
+                    printf -- "%s\n" "warning: matched package name '$last_name' differs in case from '$source'" >&2
+                    printf -- "%s\n" "         check if the downloaded package is correct and update your config file accordingly" >&2
+                fi
+
                 cd "$packages"
-                if ! curl "${repo_url%/}/$last_selected" -o "${source}.rpm"; then
+                local package_url="${repo_url%/}/$last_selected"
+                printf -- "%s\n" "fetching package $package_url" >&2
+
+                if ! curl "$package_url" -o "${source}.rpm"; then
                     echo "error: failed to download package '$source'" >&2
                     cd "$base"
                     return 1
