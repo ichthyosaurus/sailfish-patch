@@ -2782,8 +2782,8 @@ EOF
 
         needs_keyboard="$(get_multi_config "$config" "Requires" | paste -s -d'\n' - <(get_multi_config "$config" "SourcePackages") | grep -oe '^jolla-keyboard')"
         if [[ -n "$needs_keyboard" ]]; then
-            echo "restarting keyboard service..."
-            { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su systemctl --user restart maliit-server"; } || {
+            echo && echo "restarting keyboard service..."
+            { ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "systemctl --user restart maliit-server"; } || {
                 echo "warning: failed to restart keyboard service (maliit-server)" >&2 && false
             }
         fi
