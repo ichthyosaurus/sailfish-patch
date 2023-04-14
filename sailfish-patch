@@ -422,8 +422,8 @@ declare -A check_default_dummies=(
 [Release]=""
 [License]=""
 [Requires]="another-required-package"
-[Conflicts]="my-conflicting-package = 0.0.1|the-old-name"
-[Obsoletes]="the-other-old-name"
+[Conflicts]="my-conflicting-package = 0.0.1"
+[Obsoletes]="an-old-name < x.y.z|replaced-package < x.y.z"
 [Screenshots]=""
 [CompatibleVersions]=""
 [Changelog]=""
@@ -675,9 +675,25 @@ if [[ "$check_config" == true ]]; then
 
             # BEGIN value checks for multi line fields
             __check_package_specification() { # 1: error name
-                if ! echo "$value" | grep -Pqe "^([^: ]+:|)[^: ]+( (<|>|=|<=|>=) .+|)$"; then
-                    echo "error: invalid $is_multiline package specification '$value' (line $count)" >&2
-                    error=true # global
+
+                if [[ "$is_multiline" == "Obsoletes" ]]; then
+                    if ! echo "$value" | grep -Pqe "^([^: ]+:|)[^: ]+( < .+)$"; then
+                        printf -- "%s\n" "error: invalid $is_multiline package specification '$value' (line $count)" >&2
+                        printf -- "%s\n" "       You must specify obsoleted packages by defining the version number" >&2
+                        printf -- "%s\n" "       the old unchanged package would have had if it had been normally released," >&2
+                        printf -- "%s\n" "       i.e. the next higher version number." >&2
+                        printf -- "%s\n" "       " >&2
+                        printf -- "%s\n" "       Example: new-name v1.0.0 replaces old-name v0.1.0" >&2
+                        printf -- "%s\n" "                -> Obsoletes: old-name < 0.1.1" >&2
+                        printf -- "%s\n" "       " >&2
+                        printf -- "%s\n" "       This ensures a clear upgrade path from 'old-name' to 'new-name'." >&2
+                        error=true # global
+                    fi
+                else
+                    if ! echo "$value" | grep -Pqe "^([^: ]+:|)[^: ]+( (<|>|=|<=|>=) .+|)$"; then
+                        printf -- "%s\n" "error: invalid $is_multiline package specification '$value' (line $count)" >&2
+                        error=true # global
+                    fi
                 fi
             }
 
@@ -1042,6 +1058,9 @@ $(__get_default_config "Requires" | sed 's/^/# /g')
 # Conflicts:
 $(__get_default_config "Conflicts" | sed 's/^/# /g')
 
+# When renaming a patch or creating a patch that replaces another one, add
+# all old names into this list. Make sure to define the next higher version
+# number than the last released one.
 # Obsoletes:
 $(__get_default_config "Obsoletes" | sed 's/^/# /g')
 
@@ -1105,8 +1124,8 @@ Group: System/Patches
 License: @LICENSE@
 Packager: @MAINTAINER@
 Source0: %{name}-%{version}.tar.xz
-Obsoletes: %{name} <= %{version}
-Provides: %{name} = %{version}
+Obsoletes: %{name} < %{version}
+# Provides: % {name} = % {version}
 Requires: patchmanager
 @REQUIRES@
 @OBSOLETES@
@@ -2705,6 +2724,12 @@ EOF
                 for l in "${m_clean_lines[@]}"; do
                     sed -i "$(echo -en "/@${i^^}@/i\\\\\n$i: $l")" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
                 done
+
+                if [[ "$i" == Obsoletes ]]; then
+                    for l in "${m_clean_lines[@]}"; do
+                        sed -i "$(echo -en "/@${i^^}@/i\\\\\nProvides: ${l// < / = }")" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
+                    done
+                fi
             fi
 
             sed -i "s/@${i^^}@//g" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
@@ -2791,7 +2816,7 @@ EOF
         { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "if rpm -q '$package_name'; then devel-su rpm --erase '$package_name'; else true; fi;"; } || {
             echo "error: failed to ensure patch package is not installed" >&2 && false
         }; } &&\
-        { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su rpm -ivh '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"; } || {
+        { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su rpm -Uvh '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"; } || {
             echo "error: failed to install patch package" >&2 && false
         }; } &&\
         { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"; } || {
