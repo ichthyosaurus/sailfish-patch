@@ -96,6 +96,7 @@ cDEFAULT_GITIGNORE_NAME=.gitignore
 cDEFAULT_ICON_NAME=sailfish-patch_icon.png
 cDEFAULT_JSON_NAME=patch.json
 cDEFAULT_SPEC_NAME=rpm.spec
+cDEFAULT_QMLDETAILS_NAME=PatchDetails.qml
 
 cSCRIPT="$(basename "$0")"
 show_help() {
@@ -166,6 +167,7 @@ Templates:
     -eI, --export-icon          - export OpenRepos icon template
     -eJ, --export-json          - export $cDEFAULT_JSON_NAME template
     -eS, --export-spec          - export rpm specfile template
+    -eQ, --export-qmldetails    - export $cDEFAULT_QMLDETAILS_NAME template
 
 Debug/Development Options:
     -R, --check-releases        - load a list of SailfishOS releases from the Internet
@@ -329,6 +331,7 @@ while [[ $# > 0 ]]; do
         -eI|--export-icon     ) debug_export_template+=(icon);;
         -eJ|--export-json     ) debug_export_template+=(json);;
         -eS|--export-spec     ) debug_export_template+=(spec);;
+        -eQ|--export-qmldetails  ) debug_export_template+=(qmldetails);;
         -*) echo "unknown option: $1";;
         *) shift; continue;;
     esac
@@ -1164,6 +1167,89 @@ fi
 %files
 %defattr(-,root,root,-)
 %{_datadir}/patchmanager/patches/%{name}
+EOF
+}
+
+__save_template_qmldetails() { # 1: output file
+    local script="${cSCRIPT:-sailfish-patch}"
+    [[ "$script" != "sailfish-patch" ]] && script="$script (sailfish-patch)"
+
+    cat <<EOF > "$1"
+// This file was rendered by sailfish-patch for @PACKAGENAME@
+// SPDX-FileCopyrightText: 2023 Mirian Margiani
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import QtQuick 2.2
+import Sailfish.Silica 1.0
+
+Column {
+    id: root
+
+    width: parent.width
+    spacing: Theme.paddingMedium
+
+    SectionHeader { text: "Patch details" }
+
+    Column {
+        width: parent.width
+        spacing: Theme.paddingSmall
+
+        DetailItem {
+            label: "Author"
+            value: "@MAINTAINER@"
+        }
+        DetailItem {
+            label: "License"
+            value: "@LICENSE@"
+        }
+        DetailItem {
+            label: "Version"
+            value: "@VERSION@-@RELEASE@"
+        }
+    }
+
+    Item { width: parent.width; height: 1 }
+
+    ButtonLayout {
+        columnSpacing: 0
+        preferredWidth: Theme.buttonWidthLarge
+
+        Button {
+            text: "Discussion"
+            onClicked: Qt.openUrlExternally("@DISCUSSIONLINK@")
+            enabled: visible
+            visible: "@DISCUSSIONLINK@" !== ""
+        }
+        Button {
+            text: "Sources"
+            onClicked: Qt.openUrlExternally("@SOURCESLINK@")
+            enabled: visible
+            visible: "@SOURCESLINK@" !== ""
+        }
+        Button {
+            text: "Donations"
+            onClicked: Qt.openUrlExternally("@DONATIONSLINK@")
+            enabled: visible
+            visible: "@DONATIONSLINK@" !== ""
+        }
+    }
+
+    Item { width: parent.width; height: 1 }
+
+    Label {
+        text: "Full details are available on Patchmanager's patch details page. " +
+              "Go back to the list of patches, then press and hold the patch " +
+              "entry to open the context menu. There you can access patch details " +
+              "and enable/disable the patch."
+        x: Theme.horizontalPageMargin
+        width: parent.width - 2*x
+        color: Theme.secondaryHighlightColor
+        font.pixelSize: Theme.fontSizeExtraSmall
+        wrapMode: Text.Wrap
+    }
+
+    Item { width: parent.width; height: Theme.horizontalPageMargin }
+}
 EOF
 }
 
@@ -2608,13 +2694,23 @@ EOF
         # create temp dir
         temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
 
+        # generate details QML file if needed
+        rmdir "$extra_dir" --ignore-fail-on-non-empty
+
+        if [[ -d "$extra_dir" && ! -f "$extra_dir/$cDEFAULT_QMLDETAILS_NAME" ]]; then
+            printf -- "%s\n" "note: creating $extra_dir/$cDEFAULT_QMLDETAILS_NAME to be used on settings pages" >&2
+            __save_template_qmldetails "$extra_dir/$cDEFAULT_QMLDETAILS_NAME"
+            sed -i "s/@PACKAGENAME@/$(get_single_config "$config" "PackageName")/g" "$extra_dir/$cDEFAULT_QMLDETAILS_NAME"
+        fi
+
         # import extra files
-        if [[ -d "$extra_dir" && -n "$(shopt -s nullglob; shopt -s dotglob; echo "$extra_dir"/* )" ]]; then
+        if [[ -d "$extra_dir" ]] && ! rmdir "$extra_dir" 2>/dev/null; then
             if (( $(find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" | wc -l) > 0 )); then
                 mkdir -p "$temp_build_dir/extra"
                 find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" -exec cp {} "$temp_build_dir/extra" \;
             else
-                echo "warning: directory for extra files found but there are no usable files"
+                printf -- "%s\n" "warning: directory for extra files found but there are no usable files" >&2
+                printf -- "%s\n" "         allowed file types are: qml, js, png, svg, qm" >&2
             fi
         fi
 
@@ -2663,7 +2759,7 @@ EOF
         package="$(get_single_config "$config" "PackageName")"
         echo "building version: $rpm_version-$release"
 
-        # configure spec and json files
+        # configure spec, json, and qml files
         for i in PackageName Summary Version Release License Maintainer DisplayName Category DiscussionLink DonationsLink SourcesLink; do
             value="$(get_single_config "$config" "$i")"
             [[ -z "$value" ]] && value="" # empty values will be left empty
@@ -2671,6 +2767,11 @@ EOF
             value="${value//\//\\/}" # escape slashes
             sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
             sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/$cDEFAULT_JSON_NAME"
+
+            if [[ -f "$rpm_build_dir/$cDEFAULT_QMLDETAILS_NAME" ]]; then
+                sed -i "s/@${i^^}@/$value/g" "$rpm_build_dir/$cDEFAULT_QMLDETAILS_NAME"
+                sed -i "s/@${i^^}@/$value/g" "$tarball_build_dir/$cDEFAULT_QMLDETAILS_NAME"
+            fi
         done
 
         # configure json-specific fields
@@ -3099,6 +3200,7 @@ if (( ${#debug_export_template[@]} > 0 )); then
             icon) __save_template_icon /dev/stdout;;            # "$(__save_file "$i.png")";;
             json) __save_template_json /dev/stdout;;            # "$(__save_file "$i.json")";;
             spec) __save_template_spec /dev/stdout;;            # "$(__save_file "$i.spec")";;
+            qmldetails) __save_template_qmldetails /dev/stdout;; # "$(__save_file "$i.qml")";;
         esac
     done
 fi
