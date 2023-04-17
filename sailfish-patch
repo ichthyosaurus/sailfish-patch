@@ -52,6 +52,11 @@ if [[ -z "$SF_PATCH_GLOBAL_DEFAULTS" ]]; then
     SF_PATCH_GLOBAL_DEFAULTS="$HOME/.config/sailfish-patch.conf"
 fi
 
+if [[ -z "$SF_PATCH_LICENSE_CACHE" ]]; then
+    SF_PATCH_LICENSE_CACHE="$HOME/.cache/sailfish-patch/licenses"
+    mkdir -p "$SF_PATCH_LICENSE_CACHE" || true
+fi
+
 dependencies() { # 1: echo/no-echo
     local ret=0
     local print=
@@ -162,7 +167,7 @@ Arguments:
 
 Templates:
     -eC, --export-config        - export $cDEFAULT_CONFIG_NAME template
-    -eL, --export-license       - export $cDEFAULT_LICENSE_NAME template
+    -eL, --export-license       - download/import license text to $cDEFAULT_LICENSE_NAME
     -eG, --export-gitignore     - export $cDEFAULT_GITIGNORE_NAME template
     -eI, --export-icon          - export OpenRepos icon template
     -eJ, --export-json          - export $cDEFAULT_JSON_NAME template
@@ -563,6 +568,82 @@ __get_default_config() { # 1: field/key
     fi
 }
 
+__save_template_licenses() { # 1: output file
+    # SPDX license list v3.20 (2023-04-16), encoded and compressed using:
+    # curl https://spdx.org/licenses/licenses.json | grep '"licenseId":'| grep -Poe ': ".*?",$' | tr -d ': ",' | sort | xz | base64
+    cat <<EOF | base64 -d | xz -d > "$1"
+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
+EOF
+}
+
+__save_template_copying() { # 1: output file, 2: SPDX id
+    local ident="$(trim "$2")"
+    local output="$1"
+    local cached="$SF_PATCH_LICENSE_CACHE/$ident"
+
+    if [[ -n "$ident" ]] && ! __save_template_licenses /dev/stdout | grep -Fxqoe "$ident"; then
+        # not a SPDX id, cannot save anything
+        return 1
+    fi
+
+    if [[ -f "$cached" ]]; then
+        cp "$cached" "$output"
+    else
+        read -n 1 -s -p "download license text for $ident? (y/N)> "
+        if [[ "$REPLY" == "y" ]]; then
+            local url="https://raw.githubusercontent.com/spdx/license-list-data/main/text/$ident.txt"
+            curl "$url" | tee "$output" > "$cached" || {
+                printf -- "%s\n" "failed to fetch license text for $ident from $url" >&2
+            }
+        else
+            printf -- "%s\n" "no license text available for $ident" >&2
+        fi
+    fi
+}
+
 if [[ "$list_releases" == true ]]; then
     # a list of all Sailfish versions supported by patchmanager
     # (taken from: https://coderus.openrepos.net/pm2/upload/)
@@ -847,9 +928,17 @@ if [[ "$check_config" == true ]]; then
                     error=true
                 fi
                 # needs special rules
-                # TODO
-                # - ensure that this field only contains valid SPDX license indentifiers
-                # - ensure that the license in COPYING is actually the one named in this field
+                if [[ "$value" == "proprietary" ]]; then
+                    printf -- "%s\n" "warning: it is recommended to publish patches with an open license" >&2
+                    printf -- "%s\n" "         By putting the patch under an open license, you allow others to update" >&2
+                    printf -- "%s\n" "         it for future SailfishOS versions in case you no longer maintain it." >&2
+                elif ! __save_template_licenses /dev/stdout | grep -Fxqoe "$value"; then
+                    printf -- "%s\n" "error: license must be a valid SPDX license id or the string 'proprietary', got '$value'" >&2
+                    error=true
+                elif [[ ! -f "$cDEFAULT_LICENSE_NAME" ]]; then
+                    printf -- "%s\n" "warning: license text not found at $cDEFAULT_LICENSE_NAME" >&2
+                    printf -- "%s\n" "         you can download it using the '-eL' option" >&2
+                fi
             ;;
             *) is_single=false;;
         esac
@@ -1364,213 +1453,6 @@ DDsAAAAASUVORK5CYII=
 EOF
 }
 
-__save_template_copying() { # 1: output file
-    # GPL v3 compressed via 'cat COPYING | xz | base64'
-    cat <<EOF | base64 -d | xz -d > "$1"
-/Td6WFoAAATm1rRGAgAhARYAAAB0L+Wj4IlKLGVdABBt/kcnFfgiJ/l5o8vAUwpUneqTDrCTxdzR
-QAdIC1biMOA5R31/Hz2Qv8BVJS+O2mxbNyU/EOZ6giQmEnN6hUHFtoCs4LwxjEgWNxw1yBgsjVri
-6l2CFWP//Fx61aB+VrcRdD3dsSt82NExDSd2+6XTDEb/9v/txSMUZwQSU77qOxfwCsM7CZqpRtRU
-U8y+qwdY0NPsd2d3IzBw2OWfztBNIXrNmcSWeQxWYjo5fb+ukZ7kYhtcH1lkVp5xo6337JBDY7YC
-0M9+BNpI0ShfyjPb9Qiazme6xhrpySnZDTbON33zAIKjJ9k5JxNSCwNIEihBTIhmjkXPZ3f7zdhz
-tJzXbEWWBAo8Xjbud0KoLeZ5vQavY5cXKsVA0Knaiw2VfEMwOJgFfw9lVzTHX3voGEjJ6yVr589b
-46Z//j0QfKSs3uiHEZo8seDFOOAbvrT/MGbd9qHQus+NcF6hymOwEbPCm3SctHhpiiClgBgC3RUI
-MUZIC2UPVxJSz8lP/k2zbGpllOwKF8kHRszHAG+auwxH5d8yI0fSFgH98hu9joZB8gSaj9xNAaYE
-1mEAzU3yBd6soLbBwhrcnHKTWSW9n5Gah7SBl+c7lCRF4O3OeucfC9gWQYl/cwLY6CtS0JQz/w3H
-uloqnEJFjdP+OFF1AS5h8zOnUddjnIkpkTPWxshVRczNg1sHioGXDzoS3xIKoHolhkkVlWwyepb6
-V2uUXOqjM8bPzIBNUeh4atezS8J2H9RXvZ3iJYYSnRjzBMwQNShMwmXn7FJKGDN+YEuve0ECPeA2
-59NVeSS8AqJHVVjSS4+YjXRqehUdHaNXlXr67nnA/WJH/mboG3DAiEOQ4MJqpMn1CkfEt7aciFcv
-2sXezHK8TyaFieimIzG+VmA5vM+cortPBAIOrA7Uz0GPkCkUaG5nqnQnR6XbT4jjZQkYUrFK17T3
-Z9xu2OtUpgVeFDzA67EjH3xZKt8OO6PAyn4U+8muVGnQzK27soxj8r3ohfLQprzj0abmDsPAX4W9
-jGzmphHCDmb9efttVLZNMKi+R6rmWiriPwGl4RWFcUCbuV4DJw8cnPRsiW8YLPG3f1AsObiWErYc
-bBOs5dwXKMObFxGLVS6Ty6jyR2x4bpJzCvHs6G0Nkx7HUos2M8V1DvitZtJHw1G2MMipwY9iMdNk
-50uqvZWpCer3u6og40aAkN3/qmD/4jLMB2T2JirFgTEAQGcPB61XoUqAZwg/6GSsze9aRACqY2th
-Rc0Qa1sK52p5OXTxNHgDW+YgzrCUO37/pQKD38MdLG63tgaTo8oCaN2y8snQNvLUBxCaREPYCSYS
-cnFBb3Z6DMeGshsZnuilTt2CKqeqQESZlteqNwIE+8GpezvonuiEHx4G4tW7Pzu460gRzmU1QgwG
-IsrMFYM4zBgjN7qwpFu7nd++1SQLIprZRcK8peyEeG77cxIjNfWiJQnCcoU74RZDbound4gXxdWb
-3F5dGaR8HyGaqQZkIUDMttYdK5VoPCxnc38LtuCkxIRrKfkjefix86sSuKE0ebAOSgW1tzFAMuup
-x1mU1UMkwW2b3Ku/sbNE7vZnlhlhbKA2kIyTXd5+MXltGUwVvBNMfmrVcD7Vt/OqipdKYgNfnR9I
-vb4lOk7wIfd6jd6HpwhvgN2GStlj8bhIvbr4wMtnIPnYcDy0V3AoKwFTGQsvACwUe3hBbbZJ5UuH
-2wr543VxYOrhmnhIyeC5guf0nJZCsHGLa6Co84RdTIAP2DYIW+YZY+k0QiJH9Lm7R1771HFIrqzi
-ta94tN+jl2sErKRgtdPkoW2JjkHupfKlazfd+yvOjl+/GdoLiBxC6ayTCZuB1m+Ubm22/4MCyIQl
-oJOMSgwXXoOF7i8ybwnxiBpnfNLj2ZuA+MH7r1YOdyK0EZT2Sbm7azMlz1XnFWBjBXowRsyILArx
-830ZUAbWdErUD2+OKhxQ9ppwtoSAxxE2te4na/6hpR7oBjaHgAEdK+unl4nVBop3nQoE8/q18PZl
-riqH3aktlCZnc/2Y5IS/Xn6Q+2b2DODJQftxTOd7BHLnWD1eZrLEyIt1AW8pCgPHQjAjU3yDggvr
-WFlNIn2eWLYvhqb/WCMhaHj3ZkXlgWqPZ52eVg3NnEBkhdyvkE1Ib0xjJrLePHasPOYqdnYH1K7T
-2/kt0+wCL4ysO6ygtk1v02A4R4uS8PSsTLky1gfCqzPc2MQyvFBd//Ejr+lJowBDS8hWzj+58viu
-ygsNFYmumHBfrmNFnO2yRUvGDSS5xPnbNi5OM6ByBZKgQu/dtBo9K3/8dq9jPHV071EFqC7f/AdE
-Jk1RRE9+ayiG9iF+KO3uJrNFevb9g57sny5Z8FyPO3cV5aqyNLttAnPZ/txncmb5fzVhvWcKy6rR
-kaQgbdLcdpb/u6Y24IH1d1geayJ+TcYOP2a1Tb4lEmWGM2vu2RlPj02iL3nHJoQpCSifmqeqID5i
-UAFVfR34xy0XQa6cz4tYMDFuY/G9Ti3dks5TJybeXeI4q8i9Ykgh5wvu5+/UvoskIEsfUimUvOj9
-FBXQxiJ//yv0uuyXDFAD4Gn4SkDMneizhMXzDi5zDznSPVuh30DD8nIKsm+hVzta6+ofjSRCDt8N
-9KGxmyGRYKumYAHokjO5qi5dA0PuNRQPNXu0O+bfE0h07PhBadstYMppNsx7LgV/wmn/3kPUnqw6
-6oGobQ5ahmQXcByAKfyD+PyhylA+ZboKpE6eGNJZ3qyHrbCgLaG/QvY8XEvlrygtVO2buIJL6yZg
-3bc+4Q9V08bcnIJNrouQ3jO4hpK4Jt8C7RnVR6QNhF13G3CREw0GY8/yPTi4/e/ry0CEd2oD0zyc
-kmmYBtXW/qTJ47tVuvPouMUpsxGnJiHMwpi2lAPr/j81I+6Yg0t3W3c3Jcyx/oGKNcZVS0AnplmW
-QzSuuka6X5QgO8Ml5i2MyDEQoDQ4VL7Hmd16L2nlA6OmPXXq2Lxg9egRyzF1Ea/ZIIjAl3vCxMH+
-lVZSRRCtwcM5ybhm/Weo1VGx1frP32OVT6nnLzHEJNfwJeBXKfFjuFjdDWkKbN93DshXHn6BWOy4
-ABz7WLQV1nVq2PV57zXscBiywshmfy3fp7VAgV8/SrT2LFNIF4C+TXiLqDuPVbzgiIE6gUVtxI/U
-pS1tN+21YsB2wgX+GMh9KhZSR4JhCSxDoOva+rFvluOm4gvKzk0idBzpAsmxeSKu1sALWRgr8Ptw
-KBhBeIAvS4UxbKC8Fzl5KgZKPKnlyNQRg9Iqdh3fLuHPFvItb/qNLlaleleCKK/4uhsbn6JUwx75
-+EMwbHGvVMfTSqKw3WaCuWUHs6XJLxYgHbrTTbdY5o45bsCSirhZbzzRC6/c2DlBnzk5OGJeC3Ab
-50Sxa2scDTRiAX4Ew25GXDCVbLj2dXtmXeUH3xDSvgy/7HroKaVlGnkMqStecUpvWK1byDJ5uL6F
-4agkoBg+dVgc3UxA8zmThdWLHKNvslcanA1vmD3xN2sOpGmFOmAfcoTTTKgSaFR8QWkPd4j8BTen
-3ZkI873p94cBBi+IfY0azRqkw5Fw+m9AMKe/+nRVBRjiBQWSuBACmoRvKQtwmc87dTx3HCoKclXP
-z8FrqmAHbK4N5RkxBhaj8mrBfnjtzuZQGr/PJJZEYGana8mwNq4FQ6hwk1MJOoZmufI/RU9XHx6v
-VVspBAqlbgrhmxwSkVgl4FZXLU1s6o+x7eBDZcyJvUaswhLXGD0+j1F7vv6EyeVPz4j888D5Ix05
-6i+9Q5Tf04roz5ybdou2sVOhtHi54t+KuMt8fpeSRlRJ1vNNERPMaenkaiVbiGYTSw3/F++pAxTJ
-J1IIWvtpndJrrimqRztfOMQ5o+g5EskYgVe7gfUUyKV2TrUmHta/qnDycXW0po4NCsRBCRV5yGBn
-qWXolTbP5CbxXvshuwY6XaZoZw/lVEG6zqT3jOCkJer3MKLgD37yi/cgNZwMzIa2X7Rw15ks4Xe6
-nsJxAFspDVNkCRFRDvLNlrvW9xcdy++WSYnI4HNmrazGO5AvxYapdfSt7T6G7C4liqYVDVSqrwfu
-OAIyX2VhK31xmganm2WuYgmu9uhv0QCYbxs3yNb4Yw3xA1+KA2HY+rd30U1WYq9HyOfVNEIpUWWV
-APsXS85eC5IiSjoJUc3G/7u+cHqY3WwP59pkFsWIteWslTwdwZA1DZMf/fJ+OYR5H7os6TsqVAPP
-jE0iRJDatiDdYuGAeyMZgED2d7TSsqHZ7EtAbh3HN1IRLpHVNdR/n/JQDyOAX5xqq9OknhWkwsn4
-K3NkzEG7/uj0vLqCdR3oGul6l9ktUAOA1sZW9TL93d1BoUlVuFQsytqX1Jc0dRiytVqGzFcfPsNj
-l4eFa3tUAUrmfwJNvicj0KamjzQPeqTMdIQ8KtPyz98PkivxAEjbe+kAWZZV5kafoVheQNkn1JdV
-n3+21EZ0UZChvwXgeH9ZjMHoVKM1KT4QRuBnzhySzkzn21TkcM+LsmOSo/QcAkInX/0kGTyhFQ/o
-ApmiBTHcyOmcd+IylK0U6XadNVepsLrACLw0kHKqYPbgkX1E2w6CiKrdaml46BlhvmliavlQQHuP
-8tY62ne0eFc53k0sNry7ntQxAlF3VxI9PMyUZjftzNHOCpYv7gjLnCFn20pEXAq2YN4+ftdR0o8r
-0vD/HL+A38yCPmfyIeUq8nRXgScMPD9eoEsruaHzIwBz5ddApSIpb34dF/5qhxnCo6HGNm3gaK5P
-F1L/IK4ylnpmWQMvcZMF8rti5u/2FlvxZylyz1zqNOsyr69s2ujZbJprYrmhB1R7XGZt5KRhxJP1
-Y8xYQ75DCNHK2idezBizTVH5vjDXbNf3rzSk6ORRjxr7nZs2LfWcequP6j7tjism6u438uh5Pd9y
-b+WBNVPcCzpr3YEsUM7VKdAUVXJzl1kyntNQjLtXSZTQn1asmBI1zRK4UCvppHr4Z1zMcosbIJoR
-hLNJEHbcjZqEnAlbGAilnf6xuO3bALuUX8kRNQfzvn789ZrxfJAyFdu3eEoiKwKVWPYZInx0STZJ
-e/1rpqf7GTaMP7aP1WgIrcjNl2+azrLLY55A2cy8yV1aHRWnlTtY8Gq4CeL5Yq2JVJjwX+Whgu+Z
-ib87A9YX+iJq4YJEzAddpT/Vfl3q7Yi4Tm1Cn0y1OuRssUcXbtEQlAmpiRRSrN8K0d/e4e8bLQeN
-UL0vaJujRJrlLJg91TToZssuDdELNeirWQnp11VbKsz81Ij9oaKc1cAjge5bUSuLQPFOUAU0cA37
-JiasNrrcr5Q1GHQgKBeryLXofJeaVekNdWTDukjsiU41WGuE+4zppMEoLVn+gL/1eJVNqrCzdYRX
-qiswuK4tI72ac07RiY9qb0JB3ozYJpD59VopyewLpUgjQDbS4JbguPS0qqiyZ7uDiUvEZO7iYCvH
-upmgJHLjNGcV7iBA/xIAPMBZORc2jT8MrvVFAM783rznpU9EJlK3KvyVaIbihfsIAjx4kNuSbGSr
-pRFR5x2ySKyIThmOkcu1FDKxWOc4aF7nvWX9kJhPJBsBl9KBcOfCrEb6Ijg1c7qU3Lm2bK1TpKqX
-A6JtYk8ViRdrvNfjVTDdEGzZP+662aApowRJc3k2J+cACzaZE/ciC1D6yMs+jIPVrfT4KYSy0xWq
-n14cPfjgDpLWuVwmifrykM85gddL+AFXNQ+1Cz1teioSvnlUXfcw/yGHIXywC2WwZF5SYlmfNhgR
-hoGmtmFnBUXo4EGi2x1XkXspQiavFO8wk+T4bazW9u4CuT3uCrLBITv7erFiMjyNC5vOuZyUoVoN
-xcRD2nAoCigMTrt87/W8OZcLnY4zlApfGl+t/sdgcIYlHOBwpYOlrLDryHTBgYd1Cbjq1MkmG2zt
-fokhRMAU3GC4aDT0KdRRy6Kmp3sN+8e0vEI721phrDCwBw7DeQOpew5HIZO61oiHjHv3vgGJ4Ast
-70fskkct2VmlPCsR5SAAFwjUaIQ94pWJcp7rBmkBJxvhxKrAC52GGdWh25exT3/C9E7IyH+ZjOYl
-0chNozFWBqLvs6Q9Gy/5EnrszvaUwkg7DXDV1T8WNjqCK6JNRDIz0tgtZdflE9J40evCR6LaVs41
-Bm3/s0J7tyy9AiH2tZnAhPD3ycvKnTrDpIQpGIx1UqC0aLn2SwSLuVmnpD/PTJeu7uN63njAfRLU
-fcoxfiEXo2sqx7Kl6cuxaHficW3z1j6Kg9SAV8dfkBvxN1lJvjVmu3N585PBT+RfBa+FlSAROKyz
-+2H70pH1VKlbP0oUfpQ7G+H9SysFRTgXyGFrcSn9aDHS9QRXJQMKzSanmGOus0wnBVL8MXFDcrA4
-G+NKjNO0hRwbSJ0pVxJ6qbtMI0NBvRNlwlwtQCLKsFMnMROEv3LlMn0ITAwYEK/L9N+GrRDSd4Fv
-++sRC0CXXWgHotv/ySLXuulLwokss+p8/AxxQ47EuqbA7tsPjjLaeSagfQRSX0IrYLOxlFmhjKQb
-46gwE09lX0l1zpG+7MO80Kvooig0FrRC1sikxlYlCszsSlIJYP+JmUVzKKjzNlTYXsDG7DtpTiif
-NYuZsyjtZoJ/vZyHi8RU5Gti0D9hSbhZTKQXTf5gWbRT0QJpuSDJJJsPDz9U0GrGIjgl6oN5QXlj
-nq5khCKpBer6QwDRF4Qv95wLw5EV3arBpSAsV0TbxKkQnUp8iD3AqF+r1aOfH9pRF/G89Q/afV/H
-pbSDs6Q544+Z9Q3t/knkXbw8ZGjP1VL+IgQEc5BgLmw8KwkrzxfJErwq+NRY1WrDPOr89Xc4c6/I
-FNRzpd4NoLdqkm0rcaoYHNlQJskmDNStnuEDcBOVUTxXUva5ILcKVq9QZOBlUcLHPIVuM72wk7gE
-IlMDIZWzMkydpqPgpRBg0OBtvcnfumu4xSQU2ByowFdnDy7CAaIhWXFs1/VMT6uQ5mOY3fCSlz5D
-5OQG6FV0gJ36T9Drq9Oq1RS87tDINlddmUsseSUbdHnpsDxhOvddJoNrwhliWb4AFt3plGdxFyJF
-ZXsMYIycAGjjv1PO5bWyWLLgkXyL6TE22vzQN9Z+P6qI7c9zc5vFhm3F9mLNUmUgpum0avKAxYKM
-u6LbQMczjTw87ggJtRfm3t5HoQOVEPrOqAC6mEALUwxwObHa5BML2gmlSnOctS/SXMngP+Mm0alL
-weCWQwNXhXxZMeyJCsyL+sTewFdKXrfuKGHF83TH/GLy/s0cSEboLgFztbfHGy5ZXX4UlMkE1fFr
-4D0umgf9867vEN6V7rs6KBDv1h5BgMPW8Rd91A65jc+dqJTgJheWCRPootTt/Vo9LjcdJNZxWql4
-gVsSi5om56m4OCCv4jMCi8Cv3VPlimaZhHIC+AZS9dsM75TZw2sklqSPUTqqyIEImf8w2CR147lI
-mEo6GtcWKsIla78LvbctGI57ZAl3/Vxxwlv8McJLI4D80BlMj0UUhufpQpClwEY1Dzyf0x7Bc5s6
-2pBE+jZXpshAXlr8uy9WjyK1Q4HJyJ1YyGopkMxrt8tWPONlTskD45F+U40MU/RcguFJajcKusfZ
-rH/GF0JThhOQCrohITqDJPF5oVRV/w9MhjNJKM2BMh2FiGMMMHrwFmr/0WKAywOATa0Thpu2LDec
-iBbUhBSnd4s3wf8R19qP3Zt79xXGGPrhwpfQ8DBPg6BiDlKhzdteNeaXi/3bWL49Vi2tcrw6hLAj
-kO4/Zhg/5irnnSAgK8SvsTtWa9SbKxNgOsTyz0YC2SBiUcvcMdvgjXE7juf6OxTrOcVtgW3xT+oi
-IGnF+q0MWmlLy5y6Bv40BakvjX74tX8QkQtFSyw0L589x3woNK/OqWRukNOBDUdOwS9A2alXoup5
-Qm/22pmgjTKpkJxwSmUc85Y5XeT5RCtCw1TJz7ym9Gi/7Ix2rQEFfFvZ0JoyYd4tp0RDgbFbQU0a
-a5bzga4HABEcrF/vc3ostQdpUKAb6trBw6i2GJagVROeGupIGnDBCQE/cV96lmgtshZl2CjlRPEP
-sVnkx7xOd7hknhEwkfz1oLQpk7pog7D+2NFJ9FE07wuoRaTyxximHqUVBCbZ3CVKI3dp45msNOQO
-s3etYCKP+3h26i1TtL7ZQbh1oEONv7ixPqbyw7YnOnYTJNuXWPf1dKpdVOTXCv9UWLK+R+nj759C
-Rx3nyP8HaQA2BZydYJey+dQv1X1sUquRWE4voxmJHAxx8pkPVKbm9A/m85aPXUagjkkfgEYb4VsY
-pekrvrLFmaWvXDvdhi+3+ajaUAlUv6oFQOFTSKKwa8wWmAj92/SQb25I723cTnEBsO9kAUaO4vtB
-dYJvX/W0dVWTxOyp8z++kP0XhJOVxiXRETYnPk4mlrhKPB3EfndbEoxqm5OSHWKyIaYwhUOMmK9r
-puw9sWofLMB/MMK2drpIikLsOpo6uV5ZJerYV/la+hUSsNR1AzRRuptujU1gGSG+ZQjduxzkemIU
-stNJ9hRjtugzLPDm2Io5VrQY23lDU4YYKPJJQeMsxlI7pkGW9oaUBvnMYM/1wUrUrVLowpxYDL8e
-qBaPQFt0RaGQRJzhUGWiIva6Tz1ZUzkLZKgFJiCX+k1L4d3vl38Kl6gspYsnt5gqOMq1E30dgGaL
-7C0AunTJP2ST5ymHloYE8u7230yi80TFrkAQh8xczaHLqeWh+yxskPFCS+V/44vCf8nQQHT2MUsK
-2mxqPa2GCDnjgL360gPkDWXAjcjUuue0pVs8SXIvuWNSdZULjjQWhDeiOJjfUUndp4lHhMRjaK5s
-+/ek5vewAhbVMBApR61GxaEPfJHoDEI5ZaK05gjWv9vsYxqJkU9eyRdTnI76bbb1sbCLoYu8STn/
-iWj0/QILDTiZo5IzYuyncMrn9EU14eVIWDCTmUHcc0rXeTwmwejjNtjHHF32EukwoErBEiyCQlod
-06g8mB0ov9OgpCzZo18J5QKvPs4irWZKRYCG4PR7CTDxAKkd3kZyTk6mtzQ/+aT0X09x7bemdNR1
-T809A7apEEKh/SdfxMGxPvAbuJN7MgL1MTb7BCuLST72bV2xaPBvbs2qnBsnYusdxEtM7jwkUgHh
-l8CLKt+St5Yg0BQ49EVxQL/ueCuZ1iGQJuriiNzNmestGd0jLkX/mgH4ooMDcnJW7J94i8kxoGFl
-J+g/xVNvzygN9Tl01NbuhKFTkWH44tgCNsDXKnrJ5p018PiGVeD1lluvDXvSfJG9sx239dK773BH
-r78QdRqhV5YKmznRF6jg8WAPRFah/Y0tXklLG33rSPTyLP6gEI4V5Q1kml5EeXsrqgKLnonr9d3r
-6/2k7l/HjrgLAcIQICrGToobRV86DrB3bwTCtkFr8MWgmYyIf3mivOZlWRWlZ2ciOmNRolohZ6nb
-PdgC2MYxioBQdQJse+9e9ud1QkMPg8TIKebIoIm3JXoEqPE2kKqh5U/tFwS3NxpdV8ikESrjJ8WG
-sBS8ZuNFHKbLd53rAFhNyvBqkQgBn28xjCNTOhYorfgIbOUJmmbpHFfujosUUoDsZIaDB3xfFy3J
-b1zxcA+KrYZ11Go4R/LYTE2FLTdRVETxf6qqfvX7gUQE1iW4Q6uQxsz/uiR/VCbXWf5C/Ci3aaDZ
-ezEF23pdmclpzmhp1vV2utwgwsRJnQeH4UdmuFhWZ/pyIZx+1Z27Zu7ainUYyU2yhijEk7mU4HLM
-z80iUM55RhgDd+hl4gU1gh5zOdMW5HnimSdJHK+nJcgWpj3Z6no83lCY/opbSdeJtZr9sdaUcuk2
-LMZG66uo7TZMOebjRQSyEbQe1oY/ZmmFfoVM0VcTHWmvQnco3vkkl61GViRlQI6GI23CFlYoW0Lo
-PlkKAJFyFGoF+Yj6JHEEvxW81N5klunLNMYRRdmP6PU5ockBYgCWnzg9HcUdnhPO35S/wOT40aoD
-Ty6a9HToP3IN+ousyHjuj8TopREIJImRsG6Qh3qtpgMpnsGh1AXm01GDEH87oRM1lEsLHAn7QLPC
-jRVKCXtKl7uaSV5XnaJdVOHn2LcY4VvyQWH9ruJXR/v7uQXhhsqCj5+lGAqOUhWj0UJ4nXfUBLiX
-BPvTGxOOehq7sJaUGT5lZkXGYHB5c/Zau3hUjK5QrwwtI7SxzGYqnuNJdqLEgkqdbvb3zyCOXTgL
-OODTA58HDI6jmzzNL+RDdw5mwvBZ3SCz08RKGNLNDb27E4x3yXYE1rZztkuX3KLrwpuacYM/5U3e
-/J8j2I/Lmn9MgblY5KdoinFBlt3y9CQE/DdXxYujpU/nAmxYDeV/v3AWdSF/hUTvMJCjTOFLG0TR
-SucntkWacHyOAR/yXOyVroqJCS6K3gbv1nP57skXpihtM/fEkobqYZUag1rk0zdaVPU3CQzXMg1U
-VpjprphvtmjmlRNDZvpfBZiCeqYGL8+lHt8w/kIys+EHf4ZUy8R99I2EGCGwJ/oGj3aqlt34ezrl
-FmVlQ5Qm/Wl/0a0VXk+nwIAIYqjD+wAh/Y6jkIoLc0rPNZbDA+MWHOx3pSi6WF36pc0mMWtBG1vh
-VMsdB+AFkAgRxsXqabt2choFLqRx+/r2OekMpFdezKzGLyExjNcVKcGad8pt92qSuCZcQZFJAzRY
-R0RJwFOgvotjVMsmXTxK7NtN8gD3pVVxC/xnqfxj8Bzbs6oiaLZbmC1WXWemuHfH0E000H89OZXQ
-Jd/8NFgEnwbKhc5Am1x7oCMhbrZzu0P3LFdHpM+9IY8gTFJPKFix4TmxpptfZWKai9ApBLztXif7
-gZNRc+Z4QRtu/4EnJ7+E6EFE8zELuuqBsmvQplwdoG10ArLuOtRC8q3BK2yFNgNfW6skMjsPAk/F
-HlgQEGtnN0mj5OnBbr0jBrTBqZ6GAqfOpT0XbfR1NE9/DiYProQgTuioitExC1TC90qAsVMMWub1
-XNVsUCoRSX7+oAlV6wvVf46sRQWA7g2sNwDv/aF76DZ2PXzJcxK0xV4J46Xrwv+r6aFuL+wY9IId
-KviWhLiz8KA5fxzhMgdWwICuVwN1ZkLPXxSl6U6imcTToW2cOOH6eEG70IGIXEZnJ1bhzcVO8Ro/
-FQ7qPoF8MhIrsjgigeoHPYqttBTCeowh0TSQYwCzMhTZAA/WtQw4K2s7AdObPp8t/hZHooHf0ufT
-sqjKjhqeUk+ZYW5VcnGxFE4ClzsFbmMtgXgEBr0Cb4IHUlZFgW4p1uL9qDwpUhZqmrefsZ4oMoP7
-U6Y39PLR4cE6J2QrT4aWirTbum/5cyjDO3FwcRl1NPtzzYWy5noIs1GtbeneWaxr40xO/nxDOFU0
-CNG5DUqQZzH2X3PbJIH1CU/VYwvGJmpYl3kUYHDkV2QitbSjN5eqHyyoDqoXeboFk6AQllIOqJ13
-PBFzzdOLLBzQpX1pnDyW0x2syNuGal+8Ss886Dv4ZadSdkQEy5bjNhmU1/P8lokhtWW06SLf96Xi
-6bvBA/dpsiqhPyinlCFngjoohSEYtEjWusQJolR1TIiYFtMpYAXhOJkvzVVqFv+BOnZHpSs/Gy1a
-3GY6nPyO1KvTwrgygVHvi2A0IsRKf8Cvsz1eJIXv05E2TdnAXFPm6eAOdhmJurN9dLA/GYpeWbeF
-Epl1ViIHtEmrTDns5w651bMpyYX9cxjdwtmGrxDGFtvQi9MlfgdkQwfRocchggfeGwvXkE5LlxEE
-GYLwM/g4c2PHam2e448sWE/YGxwLpUtDXSIL29lN4/sREIJwh2FNoWJ93bIadn9hoi9FmbOMH7O1
-bdlM1WWUcQ5VIq9xfFHuFsqUoW0YQJFqTUavP34vDrX//fQpU5bgko/hjLrW0cI/j2jzqpyb2woW
-9yhvn8/mcU+QM5ZbmDM+oH1TvYUUy5+LnL/B9sj7kF7DeCyJMdN4Qqyyrc+9ElGGOVELiePf4Elj
-ziX0FfNeYxVOGbU+TjwQ1ms84zw8A086q4fPoPsIaCWDAUlTkzbmO+w99/cxHLaAx3bRa1OPVLCj
-01QC81AoLPzWrsSK3xq6bxSggb7XMDUFwpUd7gVActXdc7Zyed2OC0dTJkTQThCOcvj2hjln+A/Q
-Wyi+cxr+w5pxib0jHcHbMh7JPlYlx/DtoXc6Y+hozEALEmwAymptuaOFzwgQ6L7x5RRH+bOLPbgh
-reE/RU1gsWNezIljUutoVije0HLrra1v37274ieC7UF7Y+aYlRcO4tICOZfe8VMWgd5/dGnHzeM5
-60eTHPqarKF/XjKn+d0NoqWSH0sbHBQ+rC9wUG862xLEwm8p5Dp4L4Gn+qxK0s0DEP8/jClm+Uj+
-/Nyl4QkZjtWklaEHgEuXxpEPAE2ptK187SvLS1NRqtfqWUvGXTy/9qY8FGzjcYvVmMms0yA5ychX
-iv79fm6VJbsYH649gEm+1yIvYpKot6/08n5hppAyn2Sf/U7Ylwr0l4m9c751+1tgVZgh8sQCtf/F
-00rLGM1+WiBdYSZU9fn0cCqTdWSCG8KV8pRi17uCFCzMDNE8O93/z/Ie8tAlTcSVJZ4OPgUVTsCO
-T1AbAhhysmiqTk38QETMKbFUWz7Z2Luiii4u3Ucaac0wuAAJ1CMZyddBX9C8iChjZOIuIxEcn/gt
-AQN+cMfNTkX9FaZyI+h932T+IqW2C0n5DB6GYI8V3baUP1uHlohMZyDVeh0Xjtb5tcL5bl7rexJN
-1Pb8aWVz1TpVdQl34E1kccS6qD+1TChjM002dmlj4OjtzHO1qALvMRVhT8RNzoNpCSWhDLk9Jzys
-AP4SBiYk1HHXdTZi84UMbkGJ5coJv/+jwd8eH0my5opTuICV0xJ2zU9m0XvzUTvESqmcQoSPsrqd
-Kk4iYi6M+0SSbpSW54Sqjh8HTV7WDCRljrGfmn/KQBJWbqEIxnbj6FE9P7LRG9knHZbFlKdnSR2j
-xUksUaxvobsRkxMH0kkkQEbGq6QPZf4NbDiDI0KzJuqU1V864lH2DCgLl6OSW2xrqkMXfA8Q7Wrf
-4ZkEuKC6MtcVXBxO2ipgpposzpmGAsohUvjO1JuC0fs66thz7oBG92Lba8lJFEiTJBr6fyz/f7gt
-mFhD7VKMzkQRjxjgygttynGRM+uNW9dxPK0qbbDmfIyYOGlBePUeRwQwsKYA7gIBog5kdY7BIGLd
-G/JeHrJfFzenlsbpgtzMDdXFvZlNfXAPme4aC0Dec0nSzLWR5VZEZ9iPiSUff1nMYY8YjR7vJiKq
-7yvepbTudzxu5uomxvCSiqc0yJ4d7xyiEBME8CZp6dPSJ+zSs3AUJmY49rSh+PHYSgDH1TY8NdXR
-tNew8ntg+Rz/X/LTkvTwSz9HuQGet3HnIQBWUktMbNcuW9NHTwudlv+w4KNivTVrWtDXxh90jGnM
-J/F5/yD9mN33atgTl9YN5tUZ/Ix8FNSXMXpOJCHpvuV4WKwwLqxoZ9AwLDGsETDe8j6QRoz316fH
-87ecNvYfEXJ8idcGyHLezY9qEmPfpmv76QPdL7Is4qc9JzLV+sjbuagu0P6j+lgzTIinS7cQe0KJ
-KM3FC0kpacKnRrssSHlZO/hUtdD2dpPu/zFNOtiI9jIeanMS2LNOu1zE1RXNbxNl2KAP+Cdq7FMu
-8Odoa3L6kiFO9AAxp5lD7GZt1C1grEMrn7Vg/AlpGXTaUa/GX+/gdPGafsVmobPuzO22gDAxRJAk
-aPDIA3kf+hxYq13J0MCTjZH8dfPZaHG20qMKOArByBM5Bm+d4M2SgMsLw2VAYpbOFRbh70n1tJza
-Ev4/rIwY5mvZHpgVe9I2fTJiuB6rmdxNzWh9H7XV3eVU80Li1bTYSwhSiry6gWe+vu39gkF63+9D
-QROtWx5xYT47NkhuoGn2bwyGoziyaI7EBrm5URzik0bB+kYb/4T7JtBCHMJyTtkl92SLZfFCnNSK
-vJhGaq4f4E3GYVPzzxxjqxi4cxx5Dp6ev9cklGt73Fh2WeMsNxc4SbRhDo0CLwlxyM8++cPuO4W1
-iH301ExnYEoDkD3u+kjtU1+sYbz+1ow2qS67XSxTFnrdU+ykQ3+8ENc9//ixOdImFeUNObLquFXH
-tbPVii0qjDaIdtN3gIiO4NrElgMEn3lW5N+O5b6edQuOXU5tBJs8mpC+JvAI8mLks5nKQoO7587q
-FktWslvvKWhHq+00r0L2HJO27xGwkCX9fnluZCK5Mt4E53EjhmHPl0kISejImi13eatzWz8upOaE
-lPZDZZ7+FChn0UFQAJuW303H9elWZEB7uC9Uu+9/kK9ecq6ByucO0f5gXDcHCrx2Veqo9k7LNMdb
-G9wzFcs0valLPEmTUXiXptkUW2aoZe1HEZYOJNG5UNgaidS4GfGy/okAyMMC4OfiBVAJyggngRW6
-MG+AmEU03wXPoYntd8HimD2jlGpdowaRM1KuZjpgKSFxhCz4uk80eifm/CwH4+YUP7eTKWVhBNkI
-hquv4UfkWlIC+ZxHtU822BLI4MqjNq9YX3LA9RioGCR75+QmNfUogZkKAQn/h5tcGaqI5IMNh1cM
-UkkZbSu+RrkBfQkvvUIg+yb3NNDkpPXjVELn4F5gzrm17K84ynR569lENSQs0+KkfCGCv0EVdlTa
-xXWFZTc4XOc19rj78K1KCrz/rjrZjcWxd/bQv8ICMXUECd5DSMKpJI5Zif1/WxuUaOmDp+a2JlHj
-57xxzJZnsBVTlArTPeMlFMmwn3KX0pH1sI7yrcEH6EAjXehzvFh7nUbBVOH3WmSTudN2HCPmeVX3
-i1xYCKVCbUUDoQf2Ubdems3+SA6lasrGvQXMGUUV7sGlMb6A1iQB1GmQGgmSnRS0pR3Cxpmm4mqs
-+Hex/9/iITtLSsRi4vV7aFB7ZmGxp5Tcikw0F17TQe9y3WXT2hMoK7myX84YtvIeeg4uKOBPxYw0
-EzvQH/i3BKLdJeDK3o0QNant9wu0XRNPifJQMJJQHkmiJk1bsC5OrVba9IVyGOfnkQHRTmAZAyRL
-9XqpaNBhD5gFNp6AAVhElC/CxoYMZTiaRi1In99N60jfZrK42DaOgRPF7iRhwH15+SCMZxrUsK9j
-moCi2rKYzkiM9QnKozDhwyYo3zsWTHkF/OngZY0HkpffXJHux/nd1A8Iwq56ibgEYDMeJvjwAsZv
-NcPZ0PBi0mxSpiRQ13a7k2wErlWko0pYGkGsqqIkR+ozLAAWACdZbSxtYG/AwAsDxUsAJGgAAAAA
-U3mJDmLXkT4AAYFZy5ICAAHZV06xxGf7AgAAAAAEWVo=
-EOF
-}
-
 get_single_config() { # 1: config file, 2: key, 3: default value
     # we can safely assume the file exists and is valid
     # which means we can also assume the key exists if it is required
@@ -1914,7 +1796,6 @@ if [[ "$create_new" == true ]]; then
     mkdir -p "$(__get_build_path)"
 
     __save_template_config "$cDEFAULT_CONFIG_NAME"
-    __save_template_copying "$cDEFAULT_LICENSE_NAME"
     __save_template_gitignore "$cDEFAULT_GITIGNORE_NAME"
 
     git add "$cDEFAULT_CONFIG_NAME" "$cDEFAULT_LICENSE_NAME" "$cDEFAULT_GITIGNORE_NAME"
@@ -3307,12 +3188,21 @@ if (( ${#debug_export_template[@]} > 0 )); then
     for i in "${debug_export_template[@]}"; do
         case "$i" in
             config) __save_template_config /dev/stdout;;        # "$(__save_file "$cDEFAULT_CONFIG_NAME.template")";;
-            license) __save_template_copying /dev/stdout;;      # "$(__save_file "$cDEFAULT_LICENSE_NAME")";;
             gitignore) __save_template_gitignore /dev/stdout;;  # "$(__save_file ".$i")";;
             icon) __save_template_icon /dev/stdout;;            # "$(__save_file "$i.png")";;
             json) __save_template_json /dev/stdout;;            # "$(__save_file "$i.json")";;
             spec) __save_template_spec /dev/stdout;;            # "$(__save_file "$i.spec")";;
             qmldetails) __save_template_qmldetails /dev/stdout;; # "$(__save_file "$i.qml")";;
+            license)
+                config="$(__get_config_path)"
+                require_config "$config" || {
+                    printf -- "%s\n" "error: cannot save license text" >&2
+                    exit 1
+                }
+                license="$(get_single_config "$config" "License")"
+                __save_template_copying "$cDEFAULT_LICENSE_NAME" "$license"
+                printf -- "%s\n" "saved license $license to $cDEFAULT_LICENSE_NAME" >&2
+            ;;
         esac
     done
 fi
