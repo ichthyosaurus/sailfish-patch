@@ -3032,36 +3032,58 @@ $value"
             done
         else
             local most_recent=""
-            if most_recent="$(cat <<<"$changelog" | awk 'BEGIN {
-                # This script extracts the top-most changelog section. It assumes
-                # that the first non-empty line is the version line, and it
-                # assumes that the changelog is correctly formatted.
+            if most_recent="$(cat <<<"$changelog" | awk \
+                    -v expected="$(get_single_config "$config" "Version")" \
+                    -v release="$(get_single_config "$config" "Release")" 'BEGIN {
+                # This script extracts the changelog section for the current version.
+                # It assumes that the changelog is correctly formatted.
                 #
                 # If the script fails, the wizard will copy the whole changelog.
 
                 have_version=0
+                ignore_section=0
                 version_re="^([0-9]+\\.[0-9]+\\.[0-9]+)(-([0-9]+))?(\\s\\(([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])\\))?:"
             } {
                 gsub(/^[ \t]+|[ \t]+$/, "", $0)  # trim
 
                 if ($0 ~ version_re) {
                     if (have_version) {
+                        # next section found - quit
                         exit 0;
                     } else {
-                        # mark as beginning but do not actually print the line
-                        have_version=1
+                        match($0, version_re, m);
+
+                        if (m[1] != expected) {
+                            ignore_section=1
+                        } else {
+                            if (m[3] == release || release == "" || (release == "1" && m[3] == "")) {
+                                # mark as beginning but do not actually print the line
+                                have_version=1
+                                ignore_section=0
+                            } else {
+                                ignore_section=1
+                            }
+                        }
                     }
                 } else {
-                    if ($0 && !have_version) {
+                    if ($0 && !have_version && !ignore_section) {
                         # we have not encountered a version line yet but there
                         # appears to be content here - abort
                         exit 1;
                     } else {
-                        print;
+                        if (!ignore_section) {
+                            print;
+                        }
                     }
                 }
             }')"; then
-                changelog="$(trim "$most_recent")"
+                most_recent="$(trim "$most_recent")"
+
+                if [[ -n "$most_recent" ]]; then
+                    changelog="$most_recent"
+                else
+                    printf -- "%s\n" "warning: could not find a matching changelog section for this version" >&2
+                fi
             fi
         fi
 
