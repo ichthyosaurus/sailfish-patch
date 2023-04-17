@@ -1247,14 +1247,39 @@ rm -rf '%{buildroot}'
 mkdir -p '%{buildroot}/usr/share/patchmanager/patches/%{name}'
 cp -r rpm_build/* '%{buildroot}/usr/share/patchmanager/patches/%{name}'
 
+#
+# Scriptlets:
+# https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/#_syntax
+#
+# - ensure that the patch is not applied while it is being installed/updated
+# - ensure that it gets re-applied if it was applied before
+# - ensure that it is not applied after removal
+#
+
 %pre
-if [ -d '/usr/share/patchmanager/patches/%{name}' ]; then
-    /usr/sbin/patchmanager -u '%{name}' || true
+set -o pipefail
+
+if mkdir -p '%{_localstatedir}/lib/rpm-state/%{name}'; then
+    dbus-send --print-reply --system --type=method_call \\
+        --dest=org.SfietKonstantin.patchmanager /org/SfietKonstantin/patchmanager \\
+        org.SfietKonstantin.patchmanager.isPatchApplied \\
+        'string:%{name}' | tail -1 | grep -qe '\\s*boolean true$'
+
+    if [ \$? -eq 0 ]; then
+        touch '%{_localstatedir}/lib/rpm-state/%{name}/was-applied' || true
+    fi
 fi
 
+/usr/sbin/patchmanager -u '%{name}' || true
+
 %preun
-if [ -d '/usr/share/patchmanager/patches/%{name}' ]; then
-    /usr/sbin/patchmanager -u '%{name}' || true
+/usr/sbin/patchmanager -u '%{name}' || true
+
+%posttrans
+if [ -e '%{_localstatedir}/lib/rpm-state/%{name}/was-applied' ]; then
+    /usr/sbin/patchmanager -a '%{name}' || true
+    rm '%{_localstatedir}/lib/rpm-state/%{name}/was-applied' || true
+    rmdir '%{_localstatedir}/lib/rpm-state/%{name}' || true
 fi
 
 %files
