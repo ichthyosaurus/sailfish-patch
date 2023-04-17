@@ -1797,6 +1797,7 @@ if [[ "$create_new" == true ]]; then
 
     __save_template_config "$cDEFAULT_CONFIG_NAME"
     __save_template_gitignore "$cDEFAULT_GITIGNORE_NAME"
+    __save_template_qmldetails "$(__get_extra_path)/$cDEFAULT_QMLDETAILS_NAME"
 
     git add "$cDEFAULT_CONFIG_NAME" "$cDEFAULT_LICENSE_NAME" "$cDEFAULT_GITIGNORE_NAME"
     git commit -m "patch skeleton automatically created by sailfish-patch"
