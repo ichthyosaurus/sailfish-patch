@@ -1281,6 +1281,7 @@ import Sailfish.Silica 1.0
 
 Column {
     id: root
+    property string author: "@MAINTAINER@"
 
     width: parent.width
     spacing: Theme.paddingMedium
@@ -1293,7 +1294,12 @@ Column {
 
         DetailItem {
             label: "Author"
+            value: author
+        }
+        DetailItem {
+            label: "Maintainer"
             value: "@MAINTAINER@"
+            visible: author !== "@MAINTAINER@"
         }
         DetailItem {
             label: "License"
