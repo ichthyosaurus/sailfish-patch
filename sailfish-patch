@@ -3030,6 +3030,39 @@ $value"
                     in_paragraph=false
                 fi
             done
+        else
+            local most_recent=""
+            if most_recent="$(cat <<<"$changelog" | awk 'BEGIN {
+                # This script extracts the top-most changelog section. It assumes
+                # that the first non-empty line is the version line, and it
+                # assumes that the changelog is correctly formatted.
+                #
+                # If the script fails, the wizard will copy the whole changelog.
+
+                have_version=0
+                version_re="^([0-9]+\\.[0-9]+\\.[0-9]+)(-([0-9]+))?(\\s\\(([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])\\))?:"
+            } {
+                gsub(/^[ \t]+|[ \t]+$/, "", $0)  # trim
+
+                if ($0 ~ version_re) {
+                    if (have_version) {
+                        exit 0;
+                    } else {
+                        # mark as beginning but do not actually print the line
+                        have_version=1
+                    }
+                } else {
+                    if ($0 && !have_version) {
+                        # we have not encountered a version line yet but there
+                        # appears to be content here - abort
+                        exit 1;
+                    } else {
+                        print;
+                    }
+                }
+            }')"; then
+                changelog="$(trim "$most_recent")"
+            fi
         fi
 
         echo -n "$changelog" | xclip -selection c
