@@ -160,6 +160,8 @@ Arguments:
                                   Optionally set 'RPMS' to use already downloaded package
                                   files from the given directory.
                                   Note: use -eC to create a new config file.
+    -I, --inspect               - only with --build: do not actually build anything to allow
+                                  inspecting configured build sources (RPM spec, diff, etc.)
     -f, --force                 - skip some safety checks
 
     -V, --version               - show version and license information
@@ -201,6 +203,7 @@ check_update_config=false
 create_new=false
 create_new_name=
 build=false
+build_inspect=false
 update=false
 update_local_sources=""
 import=false
@@ -262,6 +265,7 @@ while [[ $# > 0 ]]; do
             fi
         ;;
         -b|--build) build=true;;
+        -I|--inspect) build_inspect=true;;
         -u|--update)
             update=true
 
@@ -2823,6 +2827,14 @@ EOF
 
         temp_spec_file="$(mktemp -p "$(pwd)" 'sailfish-patch-rpm_XXXX.spec')"
         mv "$rpm_build_dir/$cDEFAULT_SPEC_NAME" "$temp_spec_file"  # to make sure it's not included in the RPM
+
+        if [[ "$build_inspect" == true ]]; then
+            cd "$base"
+            printf -- "%s\n" "inspection mode: aborting without building packages" >&2
+            printf -- "%s\n" "                 configured build sources can be found in" >&2
+            printf -- "%s\n" "                     $temp_build_dir" >&2
+            exit 0
+        fi
 
         rpmbuild -bb --build-in-place "$temp_spec_file" --define "_rpmdir $(pwd)/RPMS"
 
