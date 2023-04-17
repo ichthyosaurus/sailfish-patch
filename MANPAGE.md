@@ -100,27 +100,33 @@ repository. (See above for further details.)
 `-i, --import CONFIG SOURCE [RPMS]`
   Setup a new working directory for the given patch. This command is especially useful for importing patches that were not created with this tool. In other cases, `-u` might be more suited for the task. `SOURCE` can either be a tarball containing the patch file (`unified_diff.patch`) in its root, or it can be a patch/diff. Optionally set `RPMS` to use already downloaded package files from the given directory. *Note:* use `-eC` to create a new config file.
 
+`-I, --inspect`
+  Only with in combination with `--build`: do not actually build anything to allow inspecting configured build sources (RPM spec, diff, etc.).
+
 `-f, --force`
   Skip some safety checks
 
 ### Templates
 `-eC, --export-config`
-  Export CONFIG template
+  Export `CONFIG` template
 
 `-eL, --export-license`
-  Export COPYING template
+  Download/import license text to `COPYING`. Does *not* write to stdout and requires a valid CONFIG file to determine which license text to fetch.
 
 `-eG, --export-gitignore`
-  Export .gitignore template
+  Export `.gitignore` template
 
 `-eI, --export-icon`
   Export OpenRepos icon template
 
 `-eJ, --export-json`
-  Export patch.json template
+  Export `patch.json` template
 
 `-eS, --export-spec`
   Export RPM spec-file template
+
+`-eQ, --export-qmldetails`
+  Export `extra/PatchDetails.qml` template
 
 ### Options for development and for debugging
 `-R, --check-releases`
@@ -172,6 +178,9 @@ The value of `SF_PATCH_GLOBAL_DEFAULTS` defaults to:
   Path to the global configuration file for some default values used in new
   patch config files
 
+`SF_PATCH_LICENSE_CACHE`
+  Path to a directory where downloaded license texts are cached
+
 
 ## ADDING NEW CONFIGURATION FIELDS
 
@@ -221,20 +230,17 @@ directory listed in your `$PATH` and mark it as executable:
     chmod +x sailfish-patch
 
 The manual page can be compiled from the Markdown source using tools like
-`md2man`, `go-md2man`, etc. Then copy the generated manual page to your local
+`md2man`, `go-md2man`, etc. Then put the generated manual page into your local
 manual directory. Usually something like the following should do the trick:
 
     go-md2man -in MANPAGE.md | gzip -c - > "sailfish-patch.1.gz"
-    sudo cp "sailfish-patch.1.gz" "/usr/local/man/man1/sailfish-patch.1.gz"
+    mkdir -p ~/.local/share/man/man1 && mv "sailfish-patch.1.gz" -t ~/.local/share/man/man1
 
 ### Notes
 
-`md2man` is a simple tool to convert Markdown sources to proper manpages.
-Install it via
-
-    gem install md2man
-
-or grab the source from <https://github.com/sunaku/md2man>.
+`md2man` is a Ruby tool to convert Markdown sources to proper manpages.
+It is available via `gem install md2man`. Sources are at <https://github.com/sunaku/md2man>.
+`go-md2man` is written in Go instead. Sources are at <https://github.com/cpuguy83/go-md2man>.
 
 
 ## DEPENDENCIES

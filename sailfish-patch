@@ -194,6 +194,8 @@ Environment:
         SF_PATCH_REMOTE_PATH=$SF_PATCH_REMOTE_PATH
     - path to the global configuration file
         SF_PATCH_GLOBAL_DEFAULTS=$SF_PATCH_GLOBAL_DEFAULTS
+    - path to a directory where downloaded license texts are cached
+        SF_PATCH_LICENSE_CACHE=$SF_PATCH_LICENSE_CACHE
 "
 }
 
