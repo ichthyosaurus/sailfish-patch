@@ -1222,7 +1222,6 @@ License: @LICENSE@
 Packager: @MAINTAINER@
 Source0: %{name}-%{version}.tar.xz
 Obsoletes: %{name} < %{version}
-# Provides: % {name} = % {version}
 Requires: patchmanager
 @REQUIRES@
 @OBSOLETES@
