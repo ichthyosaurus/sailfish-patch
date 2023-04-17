@@ -1047,7 +1047,8 @@ Version: $(__get_default_config "Version")
 Release: $(__get_default_config "Release")
 License: $(__get_default_config "License")
 
-# Add a list of commands below which can be run after deployment.
+# These commands can be run after deployment. They are for testing only and will
+# not be run when users install the patch.
 # TestCommands:
 # - killall sailfish-office
 # - sailfish-office
