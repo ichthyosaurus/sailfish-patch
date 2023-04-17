@@ -1261,6 +1261,14 @@ fi
 %defattr(-,root,root,-)
 %{_datadir}/patchmanager/patches/%{name}
 
+#
+# Changelog:
+# https://rpm-packaging-guide.github.io/#working-with-spec-files (section 5)
+#
+# The RPM changelog should only contain packaging changes but we include the
+# whole patch changelog because it allows Openrepos to extract it automatically.
+#
+
 %changelog
 @CHANGELOG@
 EOF
