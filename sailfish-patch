@@ -2594,7 +2594,7 @@ EOF
         # generate details QML file if needed
         rmdir "$extra_dir" --ignore-fail-on-non-empty
 
-        if [[ -d "$extra_dir" && ! -f "$extra_dir/$cDEFAULT_QMLDETAILS_NAME" ]]; then
+        if [[ -d "$extra_dir" && -f "$extra_dir/main.qml" && ! -f "$extra_dir/$cDEFAULT_QMLDETAILS_NAME" ]]; then
             printf -- "%s\n" "note: creating $extra_dir/$cDEFAULT_QMLDETAILS_NAME to be used on settings pages" >&2
             __save_template_qmldetails "$extra_dir/$cDEFAULT_QMLDETAILS_NAME"
             sed -i "s/@PACKAGENAME@/$(get_single_config "$config" "PackageName")/g" "$extra_dir/$cDEFAULT_QMLDETAILS_NAME"
