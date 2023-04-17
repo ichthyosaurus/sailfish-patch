@@ -1172,6 +1172,9 @@ fi
 %files
 %defattr(-,root,root,-)
 %{_datadir}/patchmanager/patches/%{name}
+
+%changelog
+@CHANGELOG@
 EOF
 }
 
@@ -2799,6 +2802,55 @@ EOF
         description="$(trim "$description")"
         description="${description:-%\{summary\}}"  # fallback to summary as placeholder
         awk -v r="$description" '{gsub(/@DESCRIPTION@/,r)}1'\
+            "$rpm_build_dir/$cDEFAULT_SPEC_NAME" > _tmp && mv _tmp "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
+
+        changelog="$(get_multi_config "$config" "Changelog" |\
+            LC_ALL=C awk -v today="$(LC_ALL=C date "+%a %b %d %Y")" \
+                         -v maintainer="$(get_single_config "$config" "Maintainer")" 'BEGIN {
+                # This script rewrites version lines to proper RPM changelog header lines.
+                # It converts these formats:
+                #       x.y.z (2023-01-01):
+                #       x.y.z-r (2023-01-01):
+                #       x.y.z-r:
+                #       x.y.z:
+                # To this format:
+                #       * Sun Apr 16 2023 maintainer <> - x.y.z-r
+                # Today´s date is used if no date was specified.
+                #
+                # All other lines are kept as-is.
+
+                version_re="^([0-9]+\\.[0-9]+\\.[0-9]+)(-([0-9]+))?(\\s\\(([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])\\))?:"
+            } {
+                # is it a version line?
+                if ($0 ~ version_re) {
+                    match($0, version_re, m);
+
+                    # does it have a date?
+                    if (m[5]) {
+                        # convert dates
+                        cmd="date -d " m[5] " \"+%a %b %d %Y\" ";
+                        cmd | getline converted;
+                        close(cmd);
+                    } else {
+                        converted=today;
+                    }
+
+                    # does it have a release number?
+                    if (m[3]) {
+                        release=m[3]
+                    } else {
+                        release="1"
+                    }
+
+                    # format as RPM version line, following:
+                    # https://rpm-packaging-guide.github.io/#working-with-spec-files (section 5)
+                    print "* " converted " " maintainer " - " m[1] "-" release;
+                } else {
+                    print;
+                }
+            }'
+        )"
+        awk -v r="$changelog" '{gsub(/@CHANGELOG@/,r)}1'\
             "$rpm_build_dir/$cDEFAULT_SPEC_NAME" > _tmp && mv _tmp "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
 
         for i in Requires Obsoletes Conflicts; do
