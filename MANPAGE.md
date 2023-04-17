@@ -1,5 +1,5 @@
 
-# SAILFISH-PATCH 1 "" "sailfish-patch 2.6.0 (2023-04-09)"
+# SAILFISH-PATCH 1 "" "sailfish-patch 2.7.0 (2023-04-17)"
 
 ## NAME
 sailfish-patch - Helper tool for developing SailfishOS patches

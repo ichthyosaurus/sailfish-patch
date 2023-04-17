@@ -95,7 +95,7 @@ folder under `/vagrant` which is one level above the folder of `sailfish-patch`.
 
 # License
 
-`sailfish-patch 2.6.0 (2023-04-09)`
+`sailfish-patch 2.7.0 (2023-04-17)`
 
 Copyright (C) 2018-2023  Mirian Margiani
 
