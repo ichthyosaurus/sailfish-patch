@@ -1243,19 +1243,19 @@ Requires: patchmanager
 %build
 
 %install
-rm -rf %{buildroot}
+rm -rf '%{buildroot}'
 
-mkdir -p %{buildroot}/usr/share/patchmanager/patches/%{name}
-cp -r rpm_build/* %{buildroot}/usr/share/patchmanager/patches/%{name}
+mkdir -p '%{buildroot}/usr/share/patchmanager/patches/%{name}'
+cp -r rpm_build/* '%{buildroot}/usr/share/patchmanager/patches/%{name}'
 
 %pre
-if [ -d /var/lib/patchmanager/ausmt/patches/%{name} ]; then
-/usr/sbin/patchmanager -u %{name} || true
+if [ -d '/usr/share/patchmanager/patches/%{name}' ]; then
+    /usr/sbin/patchmanager -u '%{name}' || true
 fi
 
 %preun
-if [ -d /var/lib/patchmanager/ausmt/patches/%{name} ]; then
-/usr/sbin/patchmanager -u %{name} || true
+if [ -d '/usr/share/patchmanager/patches/%{name}' ]; then
+    /usr/sbin/patchmanager -u '%{name}' || true
 fi
 
 %files
