@@ -1074,6 +1074,10 @@ $(__get_default_config "Screenshots" | sed 's/^/# /g')
 CompatibleVersions:
 $(__get_default_config "CompatibleVersions")
 
+# Entries should be in descending order (most recent at the top), formatted like this:
+# - x.y.z-r (yyyy-mm-dd):
+# - - short summary of a change
+# - - further summary of another change
 Changelog:
 $(__get_default_config "Changelog")
 
