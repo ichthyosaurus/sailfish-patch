@@ -220,10 +220,10 @@ publish_to_pm_catalogue=false
 publish_update_only=false
 list_releases=false
 force=false
-patch_utility=patch
+patch_utility="patch"
 debug_export_template=()
 
-while [[ $# > 0 ]]; do
+while (( $# > 0 )); do
     case "$1" in
         --help|-h) show_help; exit 0;;
         --version|-V) version; exit 0;;
@@ -232,7 +232,7 @@ while [[ $# > 0 ]]; do
             shift
 
             if [[ -z "$1" ]]; then
-                [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME" || {
+                { [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME"; } || {
                     echo "error: no config file name given" >&2
                     exit 2
                 }
@@ -246,7 +246,7 @@ while [[ $# > 0 ]]; do
             shift
 
             if [[ -z "$1" ]]; then
-                [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME" || {
+                { [[ -f "$cDEFAULT_CONFIG_NAME" ]] && check_config_name="$cDEFAULT_CONFIG_NAME"; } || {
                     echo "error: no config file name given" >&2
                     exit 2
                 }
@@ -499,8 +499,8 @@ trim() {
 
 select_range() { # 1: from pattern, 2: to pattern
     # Print lines between $1 and $2, excluding both lines matching $1 and $2.
-    [[ -z "$1" ]] && return 1 || local from_pattern="$1"
-    [[ -z "$2" ]] && return 1 || local to_pattern="$2"
+    [[ -z "$1" ]] && return 1; local from_pattern="$1"
+    [[ -z "$2" ]] && return 1; local to_pattern="$2"
     awk "/$from_pattern/{flag=1;next}/$to_pattern/{flag=0}flag"
 }
 
@@ -550,7 +550,7 @@ __get_default_config() { # 1: field/key
     [[ -z "$1" ]] && return 1
 
     if echo -n "$check_allowed_in_global_config" | grep -Pqoe "^$1$" && grep -Pqoe "^$1:" "$SF_PATCH_GLOBAL_DEFAULTS"; then
-        value="$(grep -Pe "^$1:" "$SF_PATCH_GLOBAL_DEFAULTS" | cut -d\: -f2-)"
+        value="$(grep -Pe "^$1:" "$SF_PATCH_GLOBAL_DEFAULTS" | cut -d ':' -f2-)"
         value="$(trim "$value")"
         echo "$value"
     elif [[ -n "${default_config_values[$1]}" ]]; then
@@ -626,7 +626,7 @@ EOF
 }
 
 __save_template_copying() { # 1: output file, 2: SPDX id
-    local ident="$(trim "$2")"
+    local ident; ident="$(trim "$2")"
     local output="$1"
     local cached="$SF_PATCH_LICENSE_CACHE/$ident"
 
@@ -1992,7 +1992,7 @@ else
                 fi
 
                 set -o pipefail
-                local repo="$(hxnormalize -x -e <<<"$html" | hxselect html body a -s "\n" |\
+                local repo; repo="$(hxnormalize -x -e <<<"$html" | hxselect html body a -s "\n" |\
                     sed -E 's/^<a href=".*?\.rpm">//g;s#</a>##g' |\
                     grep "armv7hl" |\
                     sort --version-sort -u)"
@@ -2098,7 +2098,7 @@ else
         cd ".$prefix"
         shopt -s nullglob dotglob
         mkdir -p "$original"
-        mv -t "$original" * || return 1
+        mv -t "$original" -- * || return 1
         shopt -u nullglob dotglob
 
         cd "$base"
@@ -3221,7 +3221,7 @@ $update_changelog"
             __wizard_load_changelog catalogue
         fi
 
-        echo done
+        echo "done"
     fi
 fi
 
