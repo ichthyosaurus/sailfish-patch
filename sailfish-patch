@@ -2572,6 +2572,7 @@ EOF
         extra_dir="$(__get_extra_path)"
         original="$(__get_original_path)"
         patched="$(__get_patched_path)"
+        package_extra_files=true
 
         # require original files
         if [[ ! -d "$original" ]]; then
@@ -2603,7 +2604,8 @@ EOF
                 exit 1
             fi
 
-            if find "$extra_dir" -type f -print0 | tr -d '\n' | tr '\0' '\n' | grep -Pqve "\.(qml|js|png|svg|qm)$"; then
+            all_extra_files="$(find "$extra_dir" -type f -print0 | tr -d '\n' | tr '\0' '\n')"
+            if grep -Pqve "\.(qml|js|png|svg|qm)$" <<<"$all_extra_files"; then
                 echo "error: unsupported extra files found" >&2
                 echo "       Only files with the following extensions are allowed:" >&2
                 echo "          .qml, .js, .png, .svg, .qm" >&2
@@ -2613,16 +2615,27 @@ EOF
             langs="$(find "$extra_dir" -type f -iname "*.qm" -execdir printf "%s\0" {} \; | tr '\n' '%' | tr '\0' '\n')"
             if [[ -n "$langs" ]] && echo "$langs" | grep -Pqve "^./translation_[a-zA-Z_]{2,5}.qm$"; then
                 echo "error: invalid translation file names found" >&2
-                echo "       Translation files must follow the format 'translation_LANG.qm'." >&2
+                echo "       Translation files must follow the format 'translation_LANG.qm'," >&2
+                echo "       e.g. 'translation_en.qm' or 'translation_zh_TW.qm'" >&2
                 exit 1
             fi
 
             qmls="$(find "$extra_dir" -type f -iname "*.qml" -print0 | tr '\n' '\t' | tr '\0' '\n')"
-            if [[ -n "$qmls" ]] && ! echo "$qmls" | grep -Pqe '/main.qml$'; then
-                echo "error: extra QML files found but no main file" >&2
-                echo "       A file named 'main.qml' must be provided" >&2
-                echo "       when including extra QML files." >&2
-                exit 1
+            if [[ -n "$qmls" ]]; then
+                if (( $(wc -l <<<"$all_extra_files") == 1 )) &&
+                       (( $(wc -l <<<"$qmls") == 1 )) &&
+                       grep -Pqe "/$cDEFAULT_QMLDETAILS_NAME" <<<"$qmls"; then
+                    # there are no user-provided extra files, only the generated details page
+                    package_extra_files=false
+                elif ! echo "$qmls" | grep -Pqe '/main.qml$'; then
+                    echo "error: extra QML files found but no main file" >&2
+                    echo "       A file named 'main.qml' must be provided" >&2
+                    echo "       when including extra QML files." >&2
+                    echo "" >&2
+                    echo "       Rename/remove the '$extra_dir' directory," >&2
+                    echo "       or add a 'main.qml' file to continue." >&2
+                    exit 1
+                fi
             fi
         fi
 
@@ -2639,13 +2652,15 @@ EOF
         fi
 
         # import extra files
-        if [[ -d "$extra_dir" ]] && ! rmdir "$extra_dir" 2>/dev/null; then
-            if (( $(find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" | wc -l) > 0 )); then
-                mkdir -p "$temp_build_dir/extra"
-                find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" -exec cp {} "$temp_build_dir/extra" \;
-            else
-                printf -- "%s\n" "warning: directory for extra files found but there are no usable files" >&2
-                printf -- "%s\n" "         allowed file types are: qml, js, png, svg, qm" >&2
+        if [[ "$package_extra_files" == true ]]; then
+            if [[ -d "$extra_dir" ]] && ! rmdir "$extra_dir" 2>/dev/null; then
+                if (( $(find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" | wc -l) > 0 )); then
+                    mkdir -p "$temp_build_dir/extra"
+                    find "$extra_dir" -type f -iregex ".*\.\(qml\|js\|png\|svg\|qm\)$" -exec cp {} "$temp_build_dir/extra" \;
+                else
+                    printf -- "%s\n" "warning: directory for extra files found but there are no usable files" >&2
+                    printf -- "%s\n" "         allowed file types are: qml, js, png, svg, qm" >&2
+                fi
             fi
         fi
 
