@@ -2375,8 +2375,11 @@ EOF
 
         cd "$base"
         "$import_command" --update "$update_local_sources" || {
-            printf -- "%s\n" "error: failed to import the patch, see above for details" >&2
-            printf -- "%s\n" "       You can safely remove '$package' for cleanup." >&2
+            printf -- "\n%s\n\n" "error: failed to import the patch, see above for details" >&2
+            printf -- "%s\n"     "       You can either safely remove '$package' for cleanup, or" >&2
+            printf -- "%s\n"     "       try to fix the patch and re-run the 'diff_apply_command.sh' helper." >&2
+            printf -- "%s\n"     "       If it fails again, checkout the updated sources and try again." >&2
+            printf -- "%s\n"     "       If it works, commit the patched files, and delete the remaining workbench files." >&2
             cd "$pre_base"
             exit 1
         }
