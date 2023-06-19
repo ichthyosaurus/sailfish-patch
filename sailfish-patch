@@ -162,6 +162,8 @@ Arguments:
                                   Note: use -eC to create a new config file.
     -I, --inspect               - only with --build: do not actually build anything to allow
                                   inspecting configured build sources (RPM spec, diff, etc.)
+    -Id, --inspect-diff DIFF    - list changed files in a patch file, e.g. unified_diff.patch,
+                                  and find source packages if an SSH connection is available
     -f, --force                 - skip some safety checks
 
     -V, --version               - show version and license information
@@ -212,6 +214,8 @@ import=false
 import_config=
 import_source=
 import_command="$0"
+import_inspect=false
+import_inspect_file=""
 optimize_screenshots=false
 optimize_screenshots_runs=1
 publish_via_ssh=false
@@ -268,6 +272,20 @@ while (( $# > 0 )); do
         ;;
         -b|--build) build=true;;
         -I|--inspect) build_inspect=true;;
+        -Id|--inspect-diff)
+            import_inspect=true
+            shift
+
+            if [[ ! -f "$1" ]]; then
+                printf -- "%s\n" "error: could not find patch file '$1'" >&2
+                exit 1
+            elif [[ "$(file --mime-type -b "$1")" != "text/x-diff" ]]; then
+                printf -- "%s\n" "error: '$1' is not a patch file" >&2
+                exit 1
+            fi
+
+            import_inspect_file="$1"
+        ;;
         -u|--update)
             update=true
 
@@ -2246,6 +2264,69 @@ EOF
         rm -rf "$patched_backup"
         rm "$tmp_diff"
     }
+
+    if [[ "$import_inspect" == true ]]; then
+        enable_package_detection=true
+        patched_files=()
+        source_packages=()
+
+        if [[ -z "$SF_PATCH_SSH_TARGET" ]]; then
+            printf -- "%s\n"   "warning: SSH target not set" >&2
+            printf -- "%s\n\n" "         package detection is only possible with a working SSH connection" >&2
+            enable_package_detection=false
+        fi
+
+        printf -- "%s\n\n" "Analysing $import_inspect_file..." >&2
+
+        mapfile -d $'\0' -t patched_files < <(grep '^---' unified_diff.patch | \
+            cut -f 1 | cut -d ' ' -f 2- | sed -Ee 's@^(a|b|orig[^/]*|jolla)/@/@' | tr '\n' '\0')
+
+        if (( ${#patched_files[@]} == 0 )); then
+            printf -- "%s\n" "Detected no patched file." >&2
+        elif (( ${#patched_files[@]} == 1 )); then
+            printf -- "%s\n" "Detected ${#patched_files[@]} patched file:" >&2
+            printf -- "%s\n" "${patched_files[@]}"  # stdout
+        else
+            printf -- "%s\n" "Detected ${#patched_files[@]} patched files:" >&2
+            printf -- "%s\n" "${patched_files[@]}"  # stdout
+        fi
+
+        if [[ "$enable_package_detection" == true ]] && (( ${#patched_files[@]} > 0 )); then
+            printf -- "%s\n" "" >&2
+            echo "=============================="  # stdout
+            printf -- "\n%s\n\n" "Searching source packages..." >&2
+
+            escaped_files=()
+            for i in "${patched_files[@]}"; do
+                escaped_files+=("$(printf -- "%q" "$i")")
+            done
+
+            mapfile -t source_packages < <(
+                { set -o pipefail; ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" \
+                        rpm -qf --queryformat "$(printf -- %q '%{NAME} === %{VERSION}\n')" -- "${escaped_files[@]}" | \
+                        sort -u | sed -Ee 's/ === (.*?)(\+.*)?/ >= \1/g'; } || {
+                    printf -- "%s\n" "error: failed to determine source packages" >&2
+                }
+            )
+
+            if (( ${#source_packages[@]} == 0 )); then
+                printf -- "%s\n" "Detected no source packages." >&2
+            elif (( ${#source_packages[@]} == 1 )); then
+                printf -- "%s\n" "Detected ${#source_packages[@]} source package:" >&2
+                printf -- "%s\n" "${source_packages[@]}"  # stdout
+            else
+                printf -- "%s\n" "Detected ${#source_packages[@]} source packages:" >&2
+                printf -- "%s\n" "${source_packages[@]}"  # stdout
+            fi
+        else
+            printf -- "%s\n" "note: automatic package detection requires a SSH connection" >&2
+        fi
+
+        if (( "${#source_packages[@]}" == 0 )) && (( "${#patched_files[@]}" > 0 )); then
+            printf -- "\n%s\n" "You can manually determine source packages by running this" >&2
+            printf -- "%s\n"   "on the device:  rpm --qf '%{NAME} >= %{VERSION}' -qf FILENAME..." >&2
+        fi
+    fi
 
     if [[ "$import" == true ]]; then
         require_outside_repo || exit 1
