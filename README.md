@@ -68,6 +68,8 @@ If no `CONFIG` file is available, follow these steps:
 
 - Create a new configuration file with `sailfish-patch -eC > CONFIG`.
 - Specify source packages, patch name, etc. (see step 1 in "Creating a new patch").
+  You can identify source packages by running `sailfish-patch -Id my_patch_file.diff`
+  with a working SSH connection.
 - Run `sailfish-patch -i CONFIG my_patch_file.diff` to create a new repo and bootstrap it.
 
 # Installation

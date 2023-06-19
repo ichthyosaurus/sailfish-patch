@@ -53,8 +53,9 @@ file in it, and run `sailfish-patch -u`.
 A patch that has no `CONFIG` file can be imported by running `sailfish-patch`
 with the `--import` option. Create a new configuration file using
 `sailfish-patch -eC > CONFIG`, then specify source packages, patch name, etc.
-Finally run `sailfish-patch CONFIG my_patch_file.diff` to create a new bootstrapped
-repository. (See above for further details.)
+You can identify source packages by running `sailfish-patch -Id my_patch_file.diff`
+with a working SSH connection. Finally run `sailfish-patch CONFIG my_patch_file.diff`
+to create a new bootstrapped repository. (See above for further details.)
 
 **Tips:**
 
@@ -102,6 +103,9 @@ repository. (See above for further details.)
 
 `-I, --inspect`
   Only with in combination with `--build`: do not actually build anything to allow inspecting configured build sources (RPM spec, diff, etc.).
+
+`-Id, --inspect-diff`
+  List changed files in a patch file, e.g. `unified_diff.patch`, and find source packages if an SSH connection is available.
 
 `-f, --force`
   Skip some safety checks
