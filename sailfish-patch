@@ -2201,60 +2201,120 @@ else
         fi
 
         if [[ "$failed" == true ]]; then
-            rm -rf "$original" "$patched"
+            rm -rf "$original" "$patched" "$patch_command_file"
             mv "$original_backup" "$original"
             mv "$patched_backup" "$patched"
 
-            cat <<EOF > "$patch_command_file"
+            touch "$patch_command_file"
+            chmod +x "$patch_command_file"
+
+            cat <<"EOF" >> "$patch_command_file"
 #!/bin/bash
+#
+EOF
+            cat <<EOF >> "$patch_command_file"
+# This tool is part of $(sed -n '/^#-/,/^#·/p;/^#·/q' "$0" | sed '1d;$s/.*//;s/#[ ]*//g;' | head -1).
+# SPDX-FileCopyrightText: Mirian Margiani
+# SPDX-License-Identifier: GPL-3.0-or-later
+# This file has been configured on $(date +%F).
+#
 
-patch_file="$(pwd)/$tmp_diff"
-patched="$relative_patched"
-strip="$strip"
+cPATCH_FILE="$(pwd)/$tmp_diff"
+cPATCH_DIR="$relative_patched"
+cSTRIP="$strip"
+cTOOLS=(wiggle patch git)
 
-if [[ ! -f "\$patch_file" ]]; then
-    printf -- "%s\\n" "error: patch file not found at '\$patch_file'" >&2
+
+EOF
+            cat <<"EOF" >> "$patch_command_file"
+#
+# Check patchs
+#
+
+if [[ ! -f "$cPATCH_FILE" ]]; then
+    printf -- "%s\n" "error: patch file not found at \"$cPATCH_FILE\"" >&2
     exit 1
 fi
 
-if [[ ! -d "\$patched" ]]; then
-    printf -- "%s\\n" "error: output directory for patched files not found at '\$patched'" >&2
+if [[ ! -d "$cPATCH_DIR" ]]; then
+    printf -- "%s\n" "error: output directory for patched files not found at \"$cPATCH_DIR\"" >&2
     exit 1
 fi
+
+
+#
+# Load tools
+#
+
+function check_tool() {  # 1: tool, 2: message?
+    if which "$1" 2> /dev/null >&2; then
+        return 0
+    fi
+
+    if [[ -z "$2" ]]; then
+        printf -- "%s\n" "error: tool \"$1\" is not available" >&2
+        printf -- "%s\n" "       make sure it is installed or try another tool" >&2
+    fi
+
+    return 1
+}
+
+available_tools=""
+
+for i in "${cTOOLS[@]}"; do
+    if check_tool "$i" quiet; then
+        available_tools+="$i (${i::1}), "
+    fi
+done
+
+if [[ -z "$available_tools" ]]; then
+    printf -- "%s\n" "error: no patch tool is available" >&2
+    printf -- "%s\n" "       supported are: $(printf -- "%s " "${cTOOLS[@]}")" >&2
+    printf -- "%s\n" "       make sure at least one of them is installed, then try again" >&2
+    exit 255
+fi
+
+
+#
+# Apply patch
+#
 
 while true; do
-    read -n 1 -s -p "Try to apply the patch using 'wiggle' or 'patch'? [w/p/q]> "
+    read -n 1 -s -p "Try to apply the patch using ${available_tools}or quit (q)? > "
 
-    case "\$REPLY" in
-        w|w) printf -- "%s\\n\\n" "applying patch using wiggle...\\n" >&2
-             printf -- "%s\\n" "usage:" >&2
-             printf -- "%s\\n" "- select files using arrow keys and enter" >&2
-             printf -- "%s\\n" "- press q to quit" >&2
-             printf -- "%s\\n\\n" "- press v to save the current view and open it in \$EDITOR\\n" >&2
+    case "$REPLY" in
+        w|w) check_tool "wiggle" || { ok=255; break; }
+             printf -- "%s\n\n" "applying patch using \"wiggle\"...\n" >&2
+             printf -- "%s\n" "usage:" >&2
+             printf -- "%s\n" "- select files using arrow keys and enter" >&2
+             printf -- "%s\n" "- press q to quit" >&2
+             printf -- "%s\n\n" "- press v to save the current view and open it in $EDITOR" >&2
              read -n 1 -s -p "press any key to continue..." CONTINUE
 
-             pushd "\$patched"
-             wiggle --strip="\$strip" --browse < "\$patch_file"
-             ok="\$?"
+             pushd "$cPATCH_DIR"
+             wiggle --strip="$cSTRIP" --browse < "$cPATCH_FILE"
+             ok="$?"
              popd; echo
              break
         ;;
-        p|P) printf -- "%s\\n" "applying patch using patch..." >&2
-             patch -d "\$patched" -p"\$strip" -u < "\$patch_file"
-             ok="\$?"
-             break
-        ;;
-        g|G) printf -- "%s\\n" "applying patch using 'git'..." >&2
-             git apply --directory="\$patched" --reject --binary -p "\$strip" -v "\$patch_file"
+        p|P) check_tool "patch" || { ok=255; break; }
+             printf -- "%s\n" "applying patch using \"patch\"..." >&2
+             patch -d "$cPATCH_DIR" -p"$cSTRIP" -u < "$cPATCH_FILE"
              ok="$?"
              break
         ;;
+        g|G) check_tool "git" || { ok=255; break; }
+             printf -- "%s\n" "applying patch using \"git\"..." >&2
+             git apply --directory="$cPATCH_DIR" --reject --binary -p "$cSTRIP" -v "$cPATCH_FILE"
+             ok="0"
+             break
+        ;;
         q|Q) exit 0;;
-        *) printf -- "%s\\n" "unrecognized option '\$REPLY'" >&2;;
+        *) printf -- "%s\n" "unrecognized option \"$REPLY\"" >&2;;
     esac
 done
 
-exit "\$ok"
+exit "$ok"
 EOF
 
             return 1
