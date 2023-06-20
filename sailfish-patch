@@ -2418,17 +2418,17 @@ EOF
         elif tar -tf "$import_source" "unified_diff.patch" >/dev/null 2>&1; then
             # it is a tar file, so we extract the patch from it
             tar -xzvf "$import_source" "unified_diff.patch" >/dev/null || {
-                printf -- "%s\n" "error: failed to extract patch from tarball" >&2
-                printf -- "%s\n" "       You can safely remove '$package' for cleanup." >&2
+                printf -- "%s\n\n" "error: failed to extract patch from tarball" >&2
+                printf -- "%s\n"   "       Nothing was imported yet. You can safely remove '$package' for cleanup." >&2
                 cd "$pre_base"
                 exit 1
             }
             import_source="$base/unified_diff.patch"
         else
-            echo "error: unrecognized source file" >&2
-            echo "       Any patch file, or a patch named 'unified_diff.patch' in the" >&2
-            echo "       root of a tar archive are supported." >&2
-            printf -- "%s\n" "       You can safely remove '$package' for cleanup." >&2
+            printf -- "%s\n"   "error: the file '$import_source' is neither a diff nor a tar archive" >&2
+            printf -- "%s\n"   "       Any patch file can be imported, as well as tar archives" >&2
+            printf -- "%s\n\n" "       containing a patch name 'unified_diff.patch'." >&2
+            printf -- "%s\n"   "       Nothing was imported yet. You can safely remove '$package' for cleanup." >&2
             cd "$pre_base"
             exit 1
         fi
