@@ -1265,7 +1265,9 @@ Requires: patchmanager
 %define _binary_payload w9.gzdio
 
 %define _buildhost reproducible
-%define clamp_mtime_to_source_date_epoch Y
+%define source_date_epoch_from_changelog Y
+%define use_source_date_epoch_as_buildtime Y
+%define build_mtime_policy clamp_to_source_date_epoch
 
 %description
 @DESCRIPTION@
@@ -2988,10 +2990,6 @@ EOF
 
             sed -i "s/@${i^^}@//g" "$rpm_build_dir/$cDEFAULT_SPEC_NAME"
         done
-
-        # prepare reproducible environment
-        SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
-        export SOURCE_DATE_EPOCH
 
         # build rpm
         echo "building RPM..."
