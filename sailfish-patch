@@ -3072,14 +3072,22 @@ EOF
         config="$(__get_config_path)" # we assume it has been checked before
         package_name="$(get_single_config "$config" "PackageName")"
 
-        scp "$rpm" "$SF_PATCH_SSH_TARGET:$SF_PATCH_REMOTE_PATH"
-        { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" \
-                "devel-su rpm -Uvh --replacepkgs --oldpackage '$SF_PATCH_REMOTE_PATH/$(basename "$rpm")'"; } || {
-            echo "error: failed to install patch package" >&2 && false
-        }; } &&\
-        { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a '$package_name'"; } || {
-            echo "error: failed to apply patch" >&2 && false
-        }; }
+        remote_package="$SF_PATCH_REMOTE_PATH/$(basename "$rpm")"
+
+        if ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "mkdir -p ${SF_PATCH_REMOTE_PATH@Q}"; then
+            scp "$rpm" "$SF_PATCH_SSH_TARGET:$SF_PATCH_REMOTE_PATH"
+
+            { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" \
+                    "devel-su rpm -Uvh --replacepkgs --oldpackage ${remote_package@Q}"; } || {
+                echo "error: failed to install patch package" >&2 && false
+            }; } &&\
+            { { head -1 "$SF_PATCH_PASSFILE" | ssh -o ConnectTimeout=3 "$SF_PATCH_SSH_TARGET" "devel-su /usr/sbin/patchmanager -a ${package_name@Q}"; } || {
+                echo "error: failed to apply patch" >&2 && false
+            }; }
+        else
+            printf -- "%s\n" "error: failed to prepare remote target directory ${SF_PATCH_REMOTE_PATH@Q}" >&2
+            false
+        fi
 
         install_success=$?
 
