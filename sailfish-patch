@@ -2119,6 +2119,20 @@ else
 
         cd "$extract"
 
+        if [[ -d usr/lib64 ]]; then
+            printf -- "%s\n" "note: coaxing 64bit sources into 32bit directory structure" >&2
+
+            # WARNING
+            # Move everything from usr/lib64 into usr/lib. This *should* be ok
+            # as patches only modify plain text files which *should* be the same
+            # for all architectures.
+            #
+            # This is required to build patches for 32bit devices when using a
+            # 64bit device to download official sources.
+            mkdir -p usr/lib
+            mv -f usr/lib64/* -t usr/lib
+        fi
+
         prefix="$(get_single_config "$config" "Prefix" "/")"
 
         if [[ ! -d ".$prefix" ]]; then
