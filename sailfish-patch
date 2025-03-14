@@ -1096,7 +1096,7 @@ if [[ "$check_config" == true ]]; then
 
             last_compatible="$(echo -n "$upstream_more_recent" | tail -1)"
             sed -i "s/^Changelog:$/Changelog:\n\
-- $next_version:\n\
+- $next_version ($(date +%F)):\n\
 - - Updated compatibility info: the patch is compatible with all versions of SailfishOS up to $last_compatible\n\
 - - You may have to install an earlier version of this patch on older system versions\n\
 -/"\
