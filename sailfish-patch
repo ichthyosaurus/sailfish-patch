@@ -445,7 +445,9 @@ check_versions="1.1.9.30
 4.5.0.25
 4.6.0.13
 4.6.0.15
-5.0.0.21"
+5.0.0.21
+5.0.0.61
+5.0.0.62"
 
 declare -A check_default_dummies=(
 [SourcePackages]="username:source-package-from-openrepos <= 1.0.10|source-package-from-official-repo"
