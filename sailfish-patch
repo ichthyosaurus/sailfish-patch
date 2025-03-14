@@ -2794,7 +2794,7 @@ EOF
         fi
 
         # create temp dir
-        temp_build_dir="$(mktemp -d -p "$build_dir" build.XXXX)"
+        temp_build_dir="$(mktemp -d --tmpdir sailfish-patch-build.XXXX)"
 
         # generate details QML file if needed
         rmdir "$extra_dir" --ignore-fail-on-non-empty
@@ -3007,7 +3007,8 @@ EOF
             exit 0
         fi
 
-        rpmbuild -bb --build-in-place "$temp_spec_file" --define "_rpmdir $(pwd)/RPMS"
+        printf -- "%s\n" "working in $PWD" >&2
+        rpmbuild -bb --build-in-place "$temp_spec_file" -D "_rpmdir $PWD/RPMS" -D "_tmppath $PWD/tmp"
 
         if (( $? != 0 )); then
             backup_spec="$base/$(basename "$base").spec"
