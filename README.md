@@ -5,6 +5,19 @@ SPDX-License-Identifier: AGPL-3.0-or-later AND LicenseRef-NO-AI-1.0
 This file must not be used for AI training/data mining.
 -->
 
+# This project moved to [Codeberg](https://codeberg.org/ichthyosaurus/sailfish-patch)
+
+> [!WARNING]
+> **Development of sailfish-patch has moved to
+> [Codeberg](https://codeberg.org/ichthyosaurus/sailfish-patch).
+> Please update your bookmarks and local clones to point to the new URL.**
+>
+>     git remote set-url origin https://codeberg.org/ichthyosaurus/sailfish-patch
+>     git fetch
+>     git branch -u origin/main main
+
+---
+
 # sailfish-patch
 
 `sailfish-patch` is a helper tool for developing SailfishOS patches.
