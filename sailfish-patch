@@ -712,7 +712,7 @@ This script only supports SailfishOS releases supported by Patchmanager.
 If a version is not marked with 'yes' in the listing above, make sure it is
 supported by cross-checking https://coderus.openrepos.net/pm2/upload/. Then
 add it to the list of supported versions by updating variable '\$check_versions'
-and create a pull request at https://github.com/ichthyosaurus/sailfish-patch."
+and create a pull request at https://codeberg.org/ichthyosaurus/sailfish-patch."
         fi
     fi
 
@@ -3028,7 +3028,7 @@ EOF
             echo "note: the generated RPM spec file can be inspected here" >&2
             echo "          $backup_spec" >&2
             echo "      Please report invalidly generated spec files as a bug at" >&2
-            echo "          https://github.com/ichthyosaurus/sailfish-patch" >&2
+            echo "          https://codeberg.org/ichthyosaurus/sailfish-patch" >&2
             echo "      Include the problematic spec file and all log messages in the report." >&2
         else
             mv --backup=t RPMS/**/*.rpm "$build_dir"

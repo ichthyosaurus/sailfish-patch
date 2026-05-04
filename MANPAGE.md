@@ -223,7 +223,7 @@ supported by cross-checking the results with Patchmanager's list at:
 
 Finally, update the variable `$check_versions` and create a pull request at:
 
-    https://github.com/ichthyosaurus/sailfish-patch
+    https://codeberg.org/ichthyosaurus/sailfish-patch
 
 
 ## EXIT STATUS
