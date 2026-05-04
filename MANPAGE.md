@@ -1,5 +1,11 @@
+<!--
+SPDX-FileCopyrightText: 2018 - 2026 Mirian Margiani
+SPDX-License-Identifier: AGPL-3.0-or-later AND LicenseRef-NO-AI-1.0
 
-# SAILFISH-PATCH 1 "" "sailfish-patch 2.7.0 (2023-04-17)"
+This file must not be used for AI training/data mining.
+-->
+
+# SAILFISH-PATCH 1 "" "sailfish-patch"
 
 ## NAME
 sailfish-patch - Helper tool for developing SailfishOS patches
@@ -273,20 +279,3 @@ It is available via `gem install md2man`. Sources are at <https://github.com/sun
 
 ## AUTHOR
 Written by Mirian Margiani, originally based on `gen-sailfish-patch` by Cornerman (2016).
-
-
-## COPYRIGHT
-Copyright (C) 2018-2023 Mirian Margiani
-
-`sailfish-patch` is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
-
-`sailfish-patch` is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-details.
-
-You should have received a copy of the GNU General Public License along with
-`sailfish-patch`.  If not, see <http://www.gnu.org/licenses/>.

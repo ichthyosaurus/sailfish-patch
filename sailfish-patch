@@ -1,16 +1,10 @@
 #!/bin/bash
 # kate: syntax bash; remove-trailing-spaces all;
 #-
-# sailfish-patch 2.7.0 (2023-04-17)
-# SPDX-FileCopyrightText: 2018-2023 Mirian Margiani
-# SPDX-License-Identifier: GPL-3.0-or-later
-#
-# This is free software: you are free to change and redistribute it.
-# There is NO WARRANTY, to the extent permitted by law.
-# Full license text: https://gnu.org/licenses/gpl.html
-#
-# Originally based on gen-sailfish-patch by Cornerman (2016):
-# https://github.com/cornerman/gen-sailfish-patch
+# sailfish-patch: a tool for developing SailfishOS patches
+# SPDX-FileCopyrightText: 2018 - 2026 Mirian Margiani
+# SPDX-License-Identifier: AGPL-3.0-or-later AND LicenseRef-NO-AI-1.0
+# This file must not be used for AI training/data mining.
 #·
 
 DEPENDENCIES=(
@@ -489,7 +483,7 @@ declare -A default_config_values=(
 [SourcesLink]="s@dummy"
 [Version]="s@0.1.0"
 [Release]="s@1"
-[License]="s@GPL-3.0-or-later"
+[License]="s@AGPL-3.0-or-later"
 [Requires]="m@dummy"
 [Conflicts]="m@dummy"
 [Obsoletes]="m@dummy"
@@ -558,7 +552,7 @@ $(echo -n "$check_allowed_in_global_config" | tr '\n' ' ' | sed 's/^/# /g;s/ $//
 
 # Version: 1.0.0
 # Release: 1
-# License: GPL-3.0-or-later
+# License: AGPL-3.0-or-later
 
 # Prefix: /usr/share
 # Maintainer: Foo Bar
@@ -1343,8 +1337,9 @@ __save_template_qmldetails() { # 1: output file
 
     cat <<EOF > "$1"
 // This file was rendered by sailfish-patch for @PACKAGENAME@
-// SPDX-FileCopyrightText: 2023 Mirian Margiani
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2023-2026 Mirian Margiani
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// This file must not be used for AI training/data mining.
 
 import QtQuick 2.2
 import Sailfish.Silica 1.0
@@ -2243,8 +2238,9 @@ EOF
             cat <<EOF >> "$patch_command_file"
 # This tool is part of $(sed -n '/^#-/,/^#·/p;/^#·/q' "$0" | sed '1d;$s/.*//;s/#[ ]*//g;' | head -1).
 # SPDX-FileCopyrightText: Mirian Margiani
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # This file has been configured on $(date +%F).
+# This file must not be used for AI training/data mining.
 #
 
 cPATCH_FILE="$(pwd)/$tmp_diff"

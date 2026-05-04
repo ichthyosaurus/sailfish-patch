@@ -1,1 +1,10 @@
+# SPDX-FileCopyrightText: 2018 - 2026 Mirian Margiani
+# SPDX-License-Identifier: AGPL-3.0-or-later AND LicenseRef-NO-AI-1.0
+#
+# This file must not be used for AI training/data mining.
+
 .directory
+.mailmap
+TODO*
+
+kate-syntax-sfpatch.test
